@@ -1,0 +1,50 @@
+item_id,Time to failure (months),Failure mode
+0,2,Infant mortality
+1,1,Infant mortality
+2,1,Infant mortality
+3,2,Infant mortality
+4,2,Infant mortality
+5,38,Fatigue crack
+6,36,Fatigue crack
+7,45,Fatigue crack
+8,30,Fatigue crack
+9,42,Fatigue crack
+10,39,Fatigue crack
+11,46,Fatigue crack
+12,27,Control board failure
+13,37,Fatigue crack
+14,36,Fatigue crack
+15,36,Fatigue crack
+16,39,Fatigue crack
+17,48,Fatigue crack
+18,35,Fatigue crack
+19,60,Fatigue crack
+20,32,Fatigue crack
+21,50,Fatigue crack
+22,39,Fatigue crack
+23,35,Fatigue crack
+24,29,Fatigue crack
+25,12,Control board failure
+26,40,Fatigue crack
+27,12,Control board failure
+28,33,Control board failure
+29,35,Fatigue crack
+30,39,Fatigue crack
+31,42,Fatigue crack
+32,43,Fatigue crack
+33,42,Fatigue crack
+34,39,Fatigue crack
+35,43,Fatigue crack
+36,38,Fatigue crack
+37,36,Fatigue crack
+38,39,Fatigue crack
+40,44,Fatigue crack
+41,51,Fatigue crack
+42,34,Fatigue crack
+43,51,Fatigue crack
+44,50,Fatigue crack
+45,39,Fatigue crack
+46,42,Fatigue crack
+47,24,Control board failure
+48,48,Fatigue crack
+49,42,Fatigue crack
