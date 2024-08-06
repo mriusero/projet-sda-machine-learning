@@ -26,7 +26,7 @@ def app_layout():
         page_0()
     elif page == "#1 Data Exploration_":
         page_1()
-    elif page == "#2 Phase I : RUL prediction":
+    elif page == "#2 RUL Prediction_":
         page_2()
 
 
