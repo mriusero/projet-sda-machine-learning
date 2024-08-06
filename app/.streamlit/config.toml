@@ -1,0 +1,22 @@
+[theme]
+base="dark"
+primaryColor="#09AB3B"
+#backgroundColor = "#FFFFFF"
+#secondaryBackgroundColor = "#F0F2F6"
+#textColor = "#262730"
+#font = "sans serif"
+
+
+
+[browser]
+# Définir le mode large par défaut
+gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
+# Activer le mode large
+
+
+
+[server]
+headless = false
+runOnSave = true

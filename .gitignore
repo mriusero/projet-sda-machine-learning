@@ -1,7 +1,8 @@
 
-// Mac OS Environnement
+// Mac OS
 .DS_Store
 
-// Python Virtual Environnement
+// Venv
 .venv
-
+.idea
+*.pyc
