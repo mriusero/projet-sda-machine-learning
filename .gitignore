@@ -1,1 +1,7 @@
+
+// Mac OS Environnement
 .DS_Store
+
+// Python Virtual Environnement
+.venv
+
