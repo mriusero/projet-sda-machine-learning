@@ -1,8 +1,8 @@
 import streamlit as st
-
+from ..functions import load_training_data, plot_crack_length_by_item_with_failures
 def page_1():
     st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)                            #TITLE
-    st.markdown('<div class="header">#1 Data Exploration_</div>', unsafe_allow_html=True)    
+    st.markdown('<div class="header">#1 Input Analysis_</div>', unsafe_allow_html=True)    
     tree = """
 ### # Input data_  
     .
@@ -50,7 +50,7 @@ def page_1():
 """
     st.markdown(tree)      
     
-    training_data = """
+    training_description = """
 ### # Training data_
     * failure_data.csv :  résumé des temps jusqu'à la panne pour les 50 échantillons.
 
@@ -92,4 +92,10 @@ La troncature est effectuée de la manière suivante :
 - si le temps jusqu'à la défaillance est supérieur à $6$, elle est tronquée à un point temporel aléatoire $t_end$, généré à partir d'une distribution uniforme de [1, ttf-1].
     
 """
-    st.markdown(training_data)
+    st.markdown(training_description)
+
+    training_data = load_training_data()
+    df_to_plot = training_data['combined_data']
+    # Exemple d'utilisation
+    fig = plot_crack_length_by_item_with_failures(df_to_plot)
+    st.pyplot(fig)

@@ -1,4 +1,4 @@
-from dashboard import app_layout, load_csv
+from dashboard import app_layout
 
 def main():
 
