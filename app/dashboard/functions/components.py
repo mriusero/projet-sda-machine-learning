@@ -6,7 +6,7 @@ def plot_crack_length_by_item_with_failures(df):
     et ajoute des annotations pour les moments de panne et le mode de défaillance.
 
     """
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(12, 14))
 
     item_ids = df['item_id'].unique()   # Obtenir les item_ids uniques
 
