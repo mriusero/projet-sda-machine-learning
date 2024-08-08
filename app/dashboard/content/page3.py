@@ -1,8 +1,8 @@
 import streamlit as st
-from ..models import RULprediction
+from ..models import handle_scenarios
 
 
-def page_3():
+def page_3(dataframes):
     st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)                            #TITLE
     st.markdown('<div class="header">#3 Cleaning_</div>', unsafe_allow_html=True)    
     texte = """
@@ -58,5 +58,5 @@ def page_3():
 """
     st.markdown(cleaning)
 
-    RULprediction()
+    handle_scenarios(dataframes)
     

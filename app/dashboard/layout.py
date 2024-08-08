@@ -29,7 +29,7 @@ def app_layout(dataframes):
     elif page == "#2 Exploration_":
         page_2(dataframes)
     elif page == "#3 Cleaning_":
-        page_3()
+        page_3(dataframes)
 
 
 
