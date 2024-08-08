@@ -1,4 +1,6 @@
 import streamlit as st
+from ..models import RULprediction
+
 
 def page_3():
     st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)                            #TITLE
@@ -56,5 +58,5 @@ def page_3():
 """
     st.markdown(cleaning)
 
-
+    RULprediction()
     

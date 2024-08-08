@@ -20,7 +20,10 @@ Based on historical knowledge, the robot has three main failure modes:
 - **Fatigue Crack Growth** : *Failures due to the growth of cracks over time. (measured every month).*
 
 **Target:** Predict if each robot can survive the next 6 months
+"""
+    st.markdown(context)
 
+    knowledges = """
 ## I.2) Knowledges
 ### a) Physical model for the crack growth process
 
@@ -40,8 +43,12 @@ $$
 
 où
 $y_{th} = 0.85$.
+"""
+    st.markdown(knowledges)
 
-
+    col1, col2 = st.columns(2)
+    with col1:
+        process_noise = """
 ### b) Process noise, observation noise, and state space models
 
 
@@ -92,9 +99,12 @@ $$
 $$
 \omega_{0,k-1} \sim \text{Normal}(0, 0.01)
 $$
+"""
+        st.markdown(process_noise)
 
-
-## I.3) Prediction and metrics
+    with col2:
+        prediction = """
+### c) prediction and metrics
 
 Le participant doit prédire si le RUL d'un élément est inférieur à $6$ mois :
 
@@ -116,62 +126,116 @@ $$
 
 où $\text{Reward}_i$ est calculé comme mentionné précédemment.
 
-La fonction suivante calcule la métrique d'évaluation :
+"""
+        st.markdown(prediction)
 
-    import pandas as pd
-    import pandas.api.types
+    col1, col2 = st.columns(2)
 
-    def score(solution: pd.DataFrame, submission: pd.DataFrame, row_id_column_name: str) -> float:
-        '''
-        This metric is customized to measure the performance of remaining useful life prediction. 
-        The participant is asked to predict whether the RUL of an item is less than 6 months: 1 - if RUL<=6 and 0 otherwise.
-        In the ground truth file "Solution.csv", there will be a column "true_rul" as well as a column "label".
-        If the predicted label matches the ground truth, a reward of 2 will be given.
-        If it does not match, then,
-        - A penalty of -4 will be given, if truth is 1 and prediction is 0;
-        - A penalty of -1/60*true_rul will be given, if truth is 0 and prediction is 1.
-
-        TODO: Add unit tests. We recommend using doctests so your tests double as usage demonstrations for competition hosts.
-        https://docs.python.org/3/library/doctest.html
-        # This example doctest works for mean absolute error:
-        >>> import pandas as pd
-        >>> row_id_column_name = "item_index"
-        >>> solution_data = {'item_index': [0, 1, 2, 3], 'label': [1, 0, 1, 0], 'true_rul': [5, 20, 1, 6]}
-        >>> submission_data = {'item_index': [0, 1, 2, 3], 'label': [1, 0, 0, 0]}
-        >>> solution = pd.DataFrame(solution_data)
-        >>> submission = pd.DataFrame(submission_data)
-        >>> score(solution.copy(), submission.copy(), row_id_column_name)
-        2
-        '''
-
-        # Initialize rewards and penalties
-        reward = 2
-        penalty_false_positive = -1/60
-        penalty_false_negative = -4
-
-        # Compare labels and calculate rewards/penalties
-        rewards_penalties = []
-        for _, (sol_label, sub_label, true_rul) in enumerate(zip(solution['label'], submission['label'], solution['true_rul'])):
-            if sol_label == sub_label:
-                rewards_penalties.append(reward)
-            elif sol_label == 1 and sub_label == 0:
-                rewards_penalties.append(penalty_false_negative)
-            elif sol_label == 0 and sub_label == 1:
-                rewards_penalties.append(penalty_false_positive * true_rul)
-            else:
-                rewards_penalties.append(0)  # No reward or penalty if labels don't match   
-
-        return sum(rewards_penalties)
-
-
+    with col1:
+        input_data = """
+### # Input data_  
+    .
+    ├── testing
+    │   └── sent_to_student
+    │       ├── group_0
+    │       │   ├── Sample_submission.csv
+    │       │   ├── testing.rar
+    │       │   └── testing_item_(n).csv  // n = 50 files
+    │       ├── scenario_0
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_1
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_2
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_3
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_4
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_5
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_6
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_7
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_8
+    │       │   └── item_(n).csv        // n = 11 files
+    │       ├── scenario_9
+    │       │   └── item_(n).csv        // n = 11 files
+    │       └── testing_data_phase_2.rar
+    │
+    └── training
+        ├── create_a_pseudo_testing_dataset.ipynb
+        ├── degradation_data
+        │   └──item_(n).csv            // n = 50 files
+        ├── failure_data.csv
+        ├── pseudo_testing_data
+        │   └── item_(n).csv            // n = 50 files
+        └── pseudo_testing_data_with_truth
+            ├── Solution.csv
+            └── item_(n).csv            // n = 50 files
 
 
+    18 directories, 326 files
+"""
+        st.markdown(input_data)
+
+    with col2:
+        train_test = """
+### # Training_
+    * failure_data.csv :  résumé des temps jusqu'à la panne pour les 50 échantillons.
+
+        - Type int    --> item_id
+        - Type int    --> Time to failure (months)
+        - Type string --> Failure mode
+        
+        // Indique le mode de défaillance pour chaque échantillon :
+        // 'Infant Mortality', 'Fatigue Crack', ou 'Control Board Failure'
+    
+    * Degradation data (a folder with x50 .csv files):  mesures de la longueur de fissure pour les 50 échantillons.  
+
+        - Type int   --> time (months)  
+        - Type float --> crack length (arbitary unit)  
+        - Type int   --> rul (months)  
+
+        // Chaque fichier CSV dans ce dossier correspond à un échantillon spécifique.
+        // Le nom du fichier `item_X` correspond à l'identifiant de l'échantillon (`item_id`) dans le fichier `failure_data.csv`.
+
+### # Testing_
+Pour évaluer la performance du modèle, un jeu de données de "pseudo-test" basé sur le jeu de données de training permet d'évaluer la performance de prédiction.
+
+`training/pseudo_testing_data`  
+    --> un jeu de données spécifiquement conçu pour évaluer les performances du modèle de manière similaire à un test. 
+
+`training/pseudo_testing_data_with_truth`  
+    --> un jeu de données similaire à pseudo_testing_data, mais inclut également les valeurs réelles pour évaluer les prédictions.  
+    --> les fichiers dans ce dossier incluent Solution.csv, qui contient les vérités de terrain pour les prévisions de RUL.
+
+`testing`  
+    --> contient des données de test qui sont utilisées pour évaluer la performance du modèle dans un contexte plus général.  
+    --> Il y a différents sous-dossiers pour chaque scénario de test (scenario_0 à scenario_9) 
+
+Le jeu de données de test dans le dossier `testing/group_0` est créé à partir des séquences complètes de fonctionnement,
+jusqu'à la défaillance en les tronquant aléatoirement à un moment donné $t_end$. L'objectif est de prédire la RUL : Remaining Useful Life à partir de ce point $t_end$. 
+
+La troncature est effectuée de la manière suivante :
+- si le temps jusqu'à la défaillance est inférieur ou égal à $6$, nous conservons la séquence telle quelle.
+- si le temps jusqu'à la défaillance est supérieur à $6$, elle est tronquée à un point temporel aléatoire $t_end$, généré à partir d'une distribution uniforme de [1, ttf-1].
+    
+    """
+        st.markdown(train_test)
+
+
+
+
+
+
+
+
+
+    phase2 ="""
 # Phase II : _
 
 --> https://www.kaggle.com/competitions/predictive-maintenance-of-a-robot-ii
-
     """
-    st.markdown(context)
-  
-
+    st.markdown(phase2)
 
