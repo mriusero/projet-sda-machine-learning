@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+import plotly.express as px
 import io
 
 
@@ -20,38 +21,34 @@ def plot_distribution(df):
 
     # Fonction pour créer un graphique pour une variable donnée
     def create_plot(column, var_type):
-        plt.figure(figsize=(5, 3))
         if var_type == 'Numeric':
-            sns.histplot(df[column], bins=30, kde=True)
-            plt.title(f'{column}')
+            fig = px.histogram(df, x=column, nbins=30, title=f'{column}',
+                               marginal='rug',  # Ajoute une rug plot pour une meilleure vue d'ensemble
+                               labels={column: 'Frequency'})
         elif var_type == 'Categorical':
-            sns.countplot(data=df, x=column)
-            plt.title(f'{column}')
-        plt.xlabel(column)
-        plt.ylabel('Frequency')
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        # Sauvegarde du graphique dans un buffer pour l'afficher dans Streamlit
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        plt.close()
-        return buf
+            fig = px.bar(df, x=column, title=f'{column}',
+                         labels={column: 'Frequency'})
+        else:
+            fig = go.Figure()  # Un graphique vide pour les types non gérés
+
+        fig.update_layout(
+            xaxis_title=column,
+            yaxis_title='Frequency',
+            xaxis_tickangle=-45
+        )
+        return fig
 
     # Détection des types de variables
     variable_types = detect_variable_type(df)
 
     # Affichage des graphiques dans Streamlit
-
-
     num_vars = len(variable_types)
+    cols = st.columns(6)  # Crée une grille avec 3 colonnes
 
-    cols = st.columns(3)  # Crée une grille avec 2 colonnes
     for i, (column, var_type) in enumerate(variable_types.items()):
         # Déterminer la colonne de la grille où le graphique doit être affiché
-        col_index = i % 3
+        col_index = i % 6
         with cols[col_index]:
-
-            buf = create_plot(column, var_type)
-            st.image(buf)
+            fig = create_plot(column, var_type)
+            st.plotly_chart(fig)
 

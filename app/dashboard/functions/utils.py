@@ -72,20 +72,20 @@ def merge_data(training_data):
     df1.to_csv('./data/output/training/training_data.csv', index=False)
     train = df1.copy()
 
-    df2 = pd.merge(training_data['pseudo_testing_data'], training_data['failure_data'], on='item_id', how='left')
+    df2 = training_data['pseudo_testing_data'].copy()
     df2.rename(columns={'item_id': 'item_index'}, inplace=True)
     df2['item_index'] = df2['item_index'].apply(lambda x: f'item_{x}')
     df2.to_csv('./data/output/pseudo_testing/pseudo_testing_data.csv', index=False)
     pseudo_test = df2.copy()
 
-    df3 = pd.merge(training_data['pseudo_testing_data_with_truth'], training_data['failure_data'], on='item_id', how='left')
+    df3 = training_data['pseudo_testing_data_with_truth'].copy()
     df3.rename(columns={'item_id': 'item_index'}, inplace=True)
     df3['item_index'] = df3['item_index'].apply(lambda x: f'item_{x}')
     df3 = pd.merge(df3, training_data['solution_data'], on='item_index', how='left')
     df3.to_csv('./data/output/pseudo_testing/pseudo_testing_data_with_truth.csv', index=False)
     pseudo_test_with_truth = df3.copy()
 
-    df4 = pd.merge(training_data['testing_data'], training_data['failure_data'], on='item_id', how='left')
+    df4 = training_data['testing_data'].copy()
     df4.rename(columns={'item_id': 'item_index'}, inplace=True)
     df4['item_index'] = df2['item_index'].apply(lambda x: f'{x}')
     df4.to_csv('./data/output/testing/testing_data_phase1.csv', index=False)
