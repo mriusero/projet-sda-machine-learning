@@ -30,5 +30,30 @@ def merge_training_data(training_data):
     df.rename(columns={'item_id': 'item_index'}, inplace=True)
     df['item_index'] = df['item_index'].apply(lambda x: f'item_{x}')
     df = pd.merge(df, training_data['solution_data'], on='item_index', how='left')
+    print(df.info())
     return df
 
+
+def calculate_score(solution_path, submission_path, row_id_column_name):   # A Cabler
+    solution = pd.read_csv(solution_path)
+    submission = pd.read_csv(submission_path)
+
+    # Initialiser les récompenses et les pénalités
+    reward = 2
+    penalty_false_positive = -1 / 60
+    penalty_false_negative = -4
+
+    # Comparer les étiquettes et calculer les récompenses/pénalités
+    rewards_penalties = []
+    for _, (sol_label, sub_label, true_rul) in enumerate(
+            zip(solution['label'], submission['label'], solution['true_rul'])):
+        if sol_label == sub_label:
+            rewards_penalties.append(reward)
+        elif sol_label == 1 and sub_label == 0:
+            rewards_penalties.append(penalty_false_negative)
+        elif sol_label == 0 and sub_label == 1:
+            rewards_penalties.append(penalty_false_positive * true_rul)
+        else:
+            rewards_penalties.append(0)
+
+    return sum(rewards_penalties)

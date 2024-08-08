@@ -1,5 +1,6 @@
 import streamlit as st
-from ..functions import load_training_data, plot_crack_length_by_item_with_failures
+from ..functions import load_training_data, merge_training_data
+from ..components import plot_crack_length_by_item_with_failures
 def page_1():
     st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)                            #TITLE
     st.markdown('<div class="header">#1 Input Analysis_</div>', unsafe_allow_html=True)    
@@ -95,7 +96,8 @@ La troncature est effectuée de la manière suivante :
     st.markdown(training_description)
 
     training_data = load_training_data()
-    df_to_plot = training_data['combined_data']
+
+    df_to_plot = merge_training_data(training_data)
     # Exemple d'utilisation
     fig = plot_crack_length_by_item_with_failures(df_to_plot)
     st.pyplot(fig)

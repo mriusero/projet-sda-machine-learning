@@ -1,3 +1,2 @@
-from .utils import load_training_data, merge_training_data
-from .components import plot_crack_length_by_item_with_failures
+from .utils import load_training_data, merge_training_data, calculate_score
 from .check_distribution import plot_distribution

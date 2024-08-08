@@ -8,11 +8,11 @@ def plot_crack_length_by_item_with_failures(df):
     """
     fig = plt.figure(figsize=(12, 14))
 
-    item_ids = df['item_id'].unique()   # Obtenir les item_ids uniques
+    item_ids = df['item_index'].unique()   # Obtenir les item_ids uniques
 
     for item_id in item_ids:
 
-        item_df = df[df['item_id'] == item_id]      # Filtrer les données pour l'item_id courant
+        item_df = df[df['item_index'] == item_id]      # Filtrer les données pour l'item_id courant
 
         plt.plot(item_df['time (months)'], item_df['crack length (arbitary unit)'], label=f'Item {item_id}')        # Tracer la courbe pour cet item_id
 
