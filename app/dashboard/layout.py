@@ -6,7 +6,7 @@ def load_css():
     with open(css_path) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-def app_layout():
+def app_layout(dataframes):
     from .content import page_0, page_1, page_2, page_3
 
     st.set_page_config(
@@ -25,9 +25,9 @@ def app_layout():
     if page == "#0 Introduction_":
         page_0()
     elif page == "#1 Input Analysis_":
-        page_1()
+        page_1(dataframes)
     elif page == "#2 Exploration_":
-        page_2()
+        page_2(dataframes)
     elif page == "#3 Cleaning_":
         page_3()
 

@@ -3,3 +3,5 @@ numpy==2.0.1
 pandas==2.2.2
 matplotlib
 seaborn
+tqdm
+plotly

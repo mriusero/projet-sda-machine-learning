@@ -91,6 +91,13 @@ def merge_data(training_data):
     df4.to_csv('./data/output/testing/testing_data_phase1.csv', index=False)
     test = df4.copy()
 
-    return train, pseudo_test, pseudo_test_with_truth, test
+    dataframes = {
+        'train': train,
+        'pseudo_test': pseudo_test,
+        'pseudo_test_with_truth': pseudo_test_with_truth,
+        'test': test
+    }
+
+    return dataframes
 
 
