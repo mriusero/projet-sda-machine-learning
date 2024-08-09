@@ -1,150 +1,119 @@
 import pandas as pd
 import streamlit as st
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
-from scipy.optimize import curve_fit
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, accuracy_score, precision_recall_fscore_support
 
+from .data_processing import clean_data, preprocess_data
+from .model_training import train_models
+from .predictions import predict_RUL
+from .performance import evaluate_models
 from ...components import plot_scatter2
 
-def clean_data(df):
-    """
-    Nettoie les données d'un DataFrame.
+def handle_scenarios(dataframes):
 
-    :param df: DataFrame à nettoyer
-    :return: DataFrame nettoyé
-    """
-    # Gestion des valeurs manquantes
-    # Imputation des valeurs manquantes pour les colonnes numériques avec la moyenne
-    for column in df.select_dtypes(include=[np.number]).columns:
-        #df[column].fillna(df[column].mean(), inplace=True)
-        df[column].dropna()
+    keys = ['train', 'pseudo_test', 'pseudo_test_with_truth', 'test']
+    cleaned_dfs = {key: clean_data(dataframes[key]) for key in keys}
 
-    # Gestion des valeurs aberrantes
-    # Par exemple, en utilisant les percentiles pour détecter les valeurs aberrantes
-    for column in df.select_dtypes(include=[np.number]).columns:
-        q1 = df[column].quantile(0.25)
-        q3 = df[column].quantile(0.75)
-        iqr = q3 - q1
-        df = df[(df[column] >= (q1 - 1.5 * iqr)) & (df[column] <= (q3 + 1.5 * iqr))]
-
-    return df
-
-
-# Définition de la fonction logistique
-def logistic_function(t, beta0, beta1, beta2):
-    return beta2 / (1 + np.exp(-(beta0 + beta1 * t)))
-
-def fit_logistic(t, y):
-    # Ajuster la fonction logistique sur les données d'une machine spécifique
-    popt, _ = curve_fit(logistic_function, t, y, maxfev=10000)
-    return popt
+    scenarios = [       # Définir les scénarios avec leurs noms et chemins de fichiers
+        {
+            'name': 'Scenario1',
+            'test_df': cleaned_dfs['pseudo_test'],
+            'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario1/'
+        },
+        {
+            'name': 'Scenario2',
+            'test_df': cleaned_dfs['pseudo_test_with_truth'],
+            'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario2/'
+        },
+        {
+            'name': 'Scenario3',
+            'test_df': cleaned_dfs['test'],
+            'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario3/'
+        }
+    ]
+    for scenario in scenarios:                      # Traitement de chaque scénario
+        st.markdown(f"## {scenario['name']}")
+        scenario_predictions = process_predictions(scenario['name'], cleaned_dfs['train'], scenario['test_df'], scenario['output_path'])
+        #col1, col2 = st.columns(2)
+        #with col1:
+        st.dataframe(scenario_predictions)
+        #with col2:
+        plot_scatter2(scenario_predictions, 'crack length (arbitary unit)', 'time (months)', 'source')
 
 
-def train_and_predict(train_df, test_df, is_classification=True):
+def process_predictions(scenario, train, test, folder_path):
     results = []
+    unique_items, prepare_item_data = preprocess_data(train, test)  # Prétraitement des données
 
-    # Traiter chaque machine individuellement
-    for item_index in train_df['item_index'].unique():
-        # Filtrer les données pour la machine spécifique
-        train_machine_df = train_df[train_df['item_index'] == item_index]
-        test_machine_df = test_df[test_df['item_index'] == item_index]
+    all_y_true_rul = []
+    all_y_pred_rul = []
+    all_y_true_ttf = []
+    all_y_pred_ttf = []
+    all_y_true_failure_mode = []
+    all_y_pred_failure_mode = []
 
-        if train_machine_df.empty or test_machine_df.empty:
+    for item in unique_items:  # Pour chaque item, entraîner et prédire
+        train_item, test_item = prepare_item_data(item)
+
+        if train_item is None or test_item is None:  # Si aucune donnée pour cet item, passer à l'item suivant
             continue
 
-        # Préparer les données
-        X_train = train_machine_df[['time (months)', 'crack length (arbitary unit)']]
-        y_train = train_machine_df['crack length (arbitary unit)']
+        models = train_models(train_item)  # Entraînement des modèles
+        result_df = predict_RUL(test_item, models)  # Prédictions et extension
 
-        # Ajuster la fonction logistique pour cette machine
-        beta0, beta1, beta2 = fit_logistic(X_train['time (months)'], y_train)
+        # Collecter les valeurs réelles et prédites pour l'évaluation
+        if 'time (months)' in test_item.columns and 'predicted_rul' in result_df.columns:
+            y_true_rul = test_item['time (months)']
+            y_pred_rul = result_df['predicted_rul']
+            all_y_true_rul.extend(y_true_rul)
+            all_y_pred_rul.extend(y_pred_rul)
 
-        # Créer un DataFrame pour les prédictions futures
-        future_times = []
-        future_predictions = []
+        if 'Time to failure (months)' in test_item.columns and 'predicted_ttf' in result_df.columns:
+            y_true_ttf = test_item['Time to failure (months)']
+            y_pred_ttf = result_df['predicted_ttf']
+            all_y_true_ttf.extend(y_true_ttf)
+            all_y_pred_ttf.extend(y_pred_ttf)
 
-        # Pour chaque ligne du DataFrame de test, générer des prédictions pour les 6 mois suivants
-        for current_time in test_machine_df['time (months)']:
-            future_time_range = np.arange(current_time + 1, current_time + 7)  # Mois suivant jusqu'à 6 mois
-            predictions = logistic_function(future_time_range, beta0, beta1, beta2)
+        if 'Failure mode' in test_item.columns and 'predicted_failure_mode' in result_df.columns:
+            y_true_failure_mode = test_item['Failure mode']
+            y_pred_failure_mode = result_df['predicted_failure_mode']
+            all_y_true_failure_mode.extend(y_true_failure_mode)
+            all_y_pred_failure_mode.extend(y_pred_failure_mode)
 
-            # Ajouter les résultats pour cette période
-            future_times.extend(future_time_range)
-            future_predictions.extend(predictions)
+        results.append(result_df)
 
-        # Ajouter les résultats pour cette machine
-        machine_results = pd.DataFrame({
-            'item_index': item_index,
-            'time (months)': future_times,
-            'predicted_crack_length': future_predictions
-        })
-        results.append(machine_results)
+    scenario_predictions = pd.concat(results, ignore_index=True)  # Concatenation des résultats pour tous les items
 
-    # Combiner les résultats de toutes les machines
-    results_df = pd.concat(results).reset_index(drop=True)
+#    if scenario[:] == 'Scenario2':
+#
+#        print(f"## {scenario[:]}")
+#        if all_y_true_rul and all_y_pred_rul:
+#            mse_rul = mean_squared_error(all_y_true_rul, all_y_pred_rul)
+#            mae_rul = mean_absolute_error(all_y_true_rul, all_y_pred_rul)
+#            st.markdown(f"**RUL Metrics:**")
+#            st.markdown(f"- Mean Squared Error (MSE): {mse_rul:.2f}")
+#            st.markdown(f"- Mean Absolute Error (MAE): {mae_rul:.2f}")
+#
+#        if all_y_true_ttf and all_y_pred_ttf:
+#            mse_ttf = mean_squared_error(all_y_true_ttf, all_y_pred_ttf)
+#            mae_ttf = mean_absolute_error(all_y_true_ttf, all_y_pred_ttf)
+#            st.markdown(f"**TTF Metrics:**")
+#            st.markdown(f"- Mean Squared Error (MSE): {mse_ttf:.2f}")
+#            st.markdown(f"- Mean Absolute Error (MAE): {mae_ttf:.2f}")
+#
+#        if all_y_true_failure_mode and all_y_pred_failure_mode:
+#            accuracy_failure_mode = accuracy_score(all_y_true_failure_mode, all_y_pred_failure_mode)
+#            st.markdown(f"**Failure Mode Metrics:**")
+#            st.markdown(f"- Accuracy: {accuracy_failure_mode:.2f}")
 
-    # Ajouter les étiquettes si nécessaire
-    if is_classification:
-        threshold = 0.85
-        results_df['predicted_label'] = (results_df['predicted_crack_length'] > threshold).astype(int)
-
-    return results_df
-
-
-def handle_scenarios(dataframes):
-    train = clean_data(dataframes['train'])
-    pseudo_test = clean_data(dataframes['pseudo_test'])
-    pseudo_test_with_truth = clean_data(dataframes['pseudo_test_with_truth'])
-    testing_data_phase1_df = clean_data(dataframes['test'])
-
-    # Scenario 1: training_data.csv + pseudo_testing_data.csv
-    st.markdown("## Scenario 1: pseudo_testing_data")
-    scenario1_train_df = train
-    scenario1_test_df = pseudo_test
-    scenario1_predictions = train_and_predict(scenario1_train_df, scenario1_test_df)
-    generate_submission_file(scenario1_predictions, '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/submission_scenario1.csv')
-
-    col1, col2 = st.columns([2,4])
-    with col1:
-        st.dataframe(scenario1_predictions)
-    with col2:
-        plot_scatter2(scenario1_predictions, 'time (months)', 'predicted_crack_length', 'item_index')
-
-
-    # Scenario 2: training_data.csv + pseudo_testing_data_with_truth.csv
-    st.markdown("## Scenario 2: pseudo_testing_data_with_truth")
-    scenario2_train_df = train
-    scenario2_test_df = pseudo_test_with_truth
-    scenario2_predictions = train_and_predict(scenario2_train_df, scenario2_test_df)
-    st.dataframe(scenario2_predictions)
-    generate_submission_file(scenario2_predictions, '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/submission_scenario2.csv')
-
-    #true_rul = pseudo_test_with_truth['true_rul']       # Calculer et afficher les erreurs pour le Scenario 2
-    #mse = mean_squared_error(true_rul, scenario2_predictions)
-    #st.markdown("Mean Squared Error for Scenario 2:", mse)
-
-    # Scenario 3: training_data.csv + testing_data_phase1.csv
-    st.markdown("## Scenario 3: testing_data_phase1")
-    scenario3_train_df = train
-    scenario3_test_df = testing_data_phase1_df
-    scenario3_predictions = train_and_predict(scenario3_train_df, scenario3_test_df)
-    st.dataframe(scenario3_predictions)
-    generate_submission_file(scenario3_predictions, '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/submission_scenario3.csv')
-
-
+    return scenario_predictions
 
 def generate_submission_file(predictions, output_path):
-    template = pd.read_csv('/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/submission_template.csv')
+    template = pd.read_csv('./app/data/output/submission/template/submission_template.csv')
     predictions['item_index'] = predictions['item_index'].apply(lambda x: f'item_{x}')
     submission = pd.merge(template, predictions, on='item_index', how='left')
-    submission['predicted_rul'] = np.where(submission['predicted_crack_length'] > 0.85, 0, 1)
-    submission = submission.groupby('item_index', as_index=False).agg({
-        'predicted_rul': 'mean'  # ou 'max', 'min', ou une autre méthode d'agrégation selon le besoin
-    })
-    submission['predicted_rul'] = submission['predicted_rul'].apply(lambda x: 1 if x == 1 else 0)
+    #submission['predicted_rul'] = np.where(submission['predicted_crack_length'] > 0.85, 0, 1)
+
     submission.to_csv(output_path, index=False)
 
 def calculate_score(solution_path, submission_path):

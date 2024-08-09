@@ -1,6 +1,8 @@
 import pandas as pd
 import os
 import re
+import glob
+
 def load_data():
 
     failure_data_path = './data/input/training_data/failure_data.csv'           #Failure data
@@ -101,3 +103,11 @@ def merge_data(training_data):
     return dataframes
 
 
+def combine_submissions_for_scenario(folder_path):
+
+    file_paths = glob.glob(os.path.join(folder_path, '*.csv'))
+    dfs = [pd.read_csv(file) for file in file_paths]
+    combined_df = pd.concat(dfs)
+    final_df = combined_df.groupby('item_index').agg({'predicted_rul': 'max'}).reset_index()
+    output_file = os.path.join(folder_path, 'Submission.csv')
+    final_df.to_csv(output_file, index=False)
