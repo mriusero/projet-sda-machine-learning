@@ -3,6 +3,7 @@ import os
 import re
 import glob
 
+
 def load_data():
 
     failure_data_path = './data/input/training_data/failure_data.csv'           #Failure data
@@ -57,7 +58,7 @@ def load_data():
             testing_dfs.append(df)
     testing_data = pd.concat(testing_dfs, ignore_index=True)
 
-    return {
+    data = {
         'failure_data': failure_data,
         'degradation_data': degradation_data,
         'pseudo_testing_data': pseudo_testing_data,
@@ -66,41 +67,47 @@ def load_data():
         'testing_data': testing_data
     }
 
+    return merge_data(data)
+
 def merge_data(training_data):
 
     df1 = pd.merge(training_data['degradation_data'], training_data['failure_data'], on='item_id', how='left')
     df1.rename(columns={'item_id': 'item_index'}, inplace=True)
     df1['item_index'] = df1['item_index'].apply(lambda x: f'item_{x}')
     df1.to_csv('./data/output/training/training_data.csv', index=False)
-    train = df1.copy()
 
     df2 = training_data['pseudo_testing_data'].copy()
     df2.rename(columns={'item_id': 'item_index'}, inplace=True)
     df2['item_index'] = df2['item_index'].apply(lambda x: f'item_{x}')
     df2.to_csv('./data/output/pseudo_testing/pseudo_testing_data.csv', index=False)
-    pseudo_test = df2.copy()
 
     df3 = training_data['pseudo_testing_data_with_truth'].copy()
     df3.rename(columns={'item_id': 'item_index'}, inplace=True)
     df3['item_index'] = df3['item_index'].apply(lambda x: f'item_{x}')
     df3 = pd.merge(df3, training_data['solution_data'], on='item_index', how='left')
     df3.to_csv('./data/output/pseudo_testing/pseudo_testing_data_with_truth.csv', index=False)
-    pseudo_test_with_truth = df3.copy()
 
     df4 = training_data['testing_data'].copy()
     df4.rename(columns={'item_id': 'item_index'}, inplace=True)
     df4['item_index'] = df2['item_index'].apply(lambda x: f'{x}')
     df4.to_csv('./data/output/testing/testing_data_phase1.csv', index=False)
-    test = df4.copy()
 
-    dataframes = {
-        'train': train,
-        'pseudo_test': pseudo_test,
-        'pseudo_test_with_truth': pseudo_test_with_truth,
-        'test': test
+
+def dataframing_data():
+    paths = {
+        'train': './data/output/training/training_data.csv',
+        'pseudo_test': './data/output/pseudo_testing/pseudo_testing_data.csv',
+        'pseudo_test_with_truth': './data/output/pseudo_testing/pseudo_testing_data_with_truth.csv',
+        'test': './data/output/testing/testing_data_phase1.csv'
     }
-
+    dataframes = {
+        'train': pd.read_csv(paths['train']),
+        'pseudo_test': pd.read_csv(paths['pseudo_test']),
+        'pseudo_test_with_truth': pd.read_csv(paths['pseudo_test_with_truth']),
+        'test': pd.read_csv(paths['test'])
+    }
     return dataframes
+
 
 
 def combine_submissions_for_scenario(folder_path):
