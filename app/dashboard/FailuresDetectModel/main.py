@@ -8,7 +8,7 @@ from .predictions import make_predictions, save_predictions
 from .validation import calculate_score
 
 def process_predictions(scenario_name, train_df, test_df, output_path):
-    # Prétraitement des données
+
     train_df = clean_data(train_df)
     test_df = clean_data(test_df)
 

@@ -115,7 +115,24 @@ def dataframing_data():
     }
     return dataframes
 
+def detect_outliers(df: pd.DataFrame) -> pd.DataFrame:
+    outliers_list = []
+    for column in df.select_dtypes(include=['number']).columns:
+        Q1 = df[column].quantile(0.25)
+        Q3 = df[column].quantile(0.75)
+        IQR = Q3 - Q1
+        outlier_mask = (df[column] < (Q1 - 1.5 * IQR)) | (df[column] > (Q3 + 1.5 * IQR))
+        outliers = df[outlier_mask].copy()
+        if not outliers.empty:
+            outliers['outlier_column'] = column
+            outliers['outlier_type'] = 'High'  # Possible extension: could also mark 'Low' for lower outliers
+            outliers_list.append(outliers)
 
+    if outliers_list:
+        all_outliers_df = pd.concat(outliers_list)
+        return all_outliers_df
+    else:
+        return pd.DataFrame(columns=df.columns.tolist() + ['outlier_column', 'outlier_type'])
 
 def combine_submissions_for_scenario(folder_path):
 
