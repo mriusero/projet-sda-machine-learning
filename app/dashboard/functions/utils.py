@@ -2,7 +2,8 @@ import pandas as pd
 import os
 import re
 import glob
-
+from datetime import datetime
+import gc
 
 def load_data():
 
@@ -92,6 +93,12 @@ def merge_data(training_data):
     df4['item_index'] = df2['item_index'].apply(lambda x: f'{x}')
     df4.to_csv('./data/output/testing/testing_data_phase1.csv', index=False)
 
+    update_message = 'New random data generated'
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    gc.collect()
+
+    return f"[{timestamp}] {update_message}"
 
 def dataframing_data():
     paths = {

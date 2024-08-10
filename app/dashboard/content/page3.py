@@ -5,10 +5,10 @@ from ..functions import dataframing_data
 
 def page_3():
     st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)                            #TITLE
-    st.markdown('<div class="header">#3 Training_</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header">#3 Feature Engineering_</div>', unsafe_allow_html=True)
     texte = """
 
-    Here is the training phase.
+    Here is the Feature Engineering phase.
 
 """
     st.markdown(texte)
