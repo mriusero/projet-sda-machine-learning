@@ -1,22 +1,19 @@
 import numpy as np
+import streamlit as st
 
 def clean_data(df):
     """
     Nettoie les données d'un DataFrame.
     """
-    # Gestion des valeurs manquantes
-    # Imputation des valeurs manquantes pour les colonnes numériques avec la moyenne
-    for column in df.select_dtypes(include=[np.number]).columns:
-        #df[column].fillna(df[column].mean(), inplace=True)
-        df[column].dropna()
 
-    # Gestion des valeurs aberrantes
-    # Par exemple, en utilisant les percentiles pour détecter les valeurs aberrantes
-    for column in df.select_dtypes(include=[np.number]).columns:
-        q1 = df[column].quantile(0.25)
-        q3 = df[column].quantile(0.75)
-        iqr = q3 - q1
-        df = df[(df[column] >= (q1 - 1.5 * iqr)) & (df[column] <= (q3 + 1.5 * iqr))]
+    df = df.dropna()
+    ## Gestion des valeurs aberrantes
+    ## Par exemple, en utilisant les percentiles pour détecter les valeurs aberrantes
+    #for column in df.select_dtypes(include=[np.number]).columns:
+    #    q1 = df[column].quantile(0.25)
+    #    q3 = df[column].quantile(0.75)
+    #    iqr = q3 - q1
+    #    df = df[(df[column] >= (q1 - 1.5 * iqr)) & (df[column] <= (q3 + 1.5 * iqr))]
 
     return df
 

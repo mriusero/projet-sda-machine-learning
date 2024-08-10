@@ -7,7 +7,7 @@ def load_css():
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 def app_layout(dataframes):
-    from .content import page_0, page_1, page_2, page_3
+    from .content import page_0, page_1, page_2, page_3, page_4
 
     st.set_page_config(
         page_title="SDA-MACHINE-LEARNING",
@@ -20,16 +20,23 @@ def app_layout(dataframes):
     )
 
     load_css()
-    page = st.sidebar.radio("Overview", ["#0 Introduction_", "#1 Input Analysis_", "#2 Exploration_", "#3 Cleaning_"])
+    page = st.sidebar.radio("Overview", ["#0 Introduction_",
+                                         "#1 Exploration & Cleaning_",
+                                         "#2 Feature Engineering_",
+                                         "#3 Training_",
+                                         "#4 Prediction_",
+                                         ])
 
     if page == "#0 Introduction_":
         page_0()
-    elif page == "#1 Input Analysis_":
+    elif page == "#1 Exploration & Cleaning_":
         page_1(dataframes)
-    elif page == "#2 Exploration_":
-        page_2(dataframes)
-    elif page == "#3 Cleaning_":
+    elif page == "#2 Feature Engineering_":
+        page_2()
+    elif page == "#3 Training_":
         page_3(dataframes)
+    elif page == "#4 Prediction_":
+        page_4()
 
 
 
