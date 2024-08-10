@@ -1,5 +1,5 @@
 import streamlit as st
-from ..models import handle_scenarios
+from ..FailuresDetectModel import handle_scenarios
 from ..functions import dataframing_data
 
 

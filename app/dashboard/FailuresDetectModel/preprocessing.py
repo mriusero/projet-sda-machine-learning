@@ -1,8 +1,6 @@
-import numpy as np
-import streamlit as st
+# preprocessing.py
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-
 
 def clean_data(df):
 
@@ -32,21 +30,3 @@ def normalize_values(df: pd.DataFrame, columns: list) -> pd.DataFrame:
     return df
 
 
-
-
-
-def preprocess_data(train, test):
-    """
-    Création d'une Window pour chaque item.
-    """
-    unique_items = train['item_index'].unique()
-    def prepare_item_data(item):
-        train_item = train[train['item_index'] == item].copy()
-        test_item = test[test['item_index'] == item].copy()
-
-        if train_item.empty or test_item.empty:
-            return None, None
-
-        return train_item, test_item
-
-    return unique_items, prepare_item_data

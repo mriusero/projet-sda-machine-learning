@@ -4,7 +4,7 @@ import streamlit as st
 def page_0():
     st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)
     st.markdown('<div class="header">Marius Ayrault - SDA 2024/2025</div>', unsafe_allow_html=True)
-    st.text("------------------------------------------------------------------------------------------------------------------------")
+    st.text('_'*100)
     context = """ 
 # Phase I : Remaining Useful Life (RUL)_
 --> https://www.kaggle.com/competitions/predictive-maintenance-for-industrial-robots-i
