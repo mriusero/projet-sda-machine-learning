@@ -1,21 +1,38 @@
 import numpy as np
 import streamlit as st
+import pandas as pd
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+
 
 def clean_data(df):
-    """
-    Nettoie les données d'un DataFrame.
-    """
 
     df = df.dropna()
-    ## Gestion des valeurs aberrantes
-    ## Par exemple, en utilisant les percentiles pour détecter les valeurs aberrantes
-    #for column in df.select_dtypes(include=[np.number]).columns:
-    #    q1 = df[column].quantile(0.25)
-    #    q3 = df[column].quantile(0.75)
-    #    iqr = q3 - q1
-    #    df = df[(df[column] >= (q1 - 1.5 * iqr)) & (df[column] <= (q3 + 1.5 * iqr))]
 
     return df
+
+def standardize_values(df: pd.DataFrame, columns: list) -> pd.DataFrame:
+
+    for col in columns:
+        if col not in df.columns:
+            raise ValueError(f"La colonne '{col}' n'existe pas dans le DataFrame")
+
+    scaler = StandardScaler()
+    df[columns] = scaler.fit_transform(df[columns])
+
+    return df
+def normalize_values(df: pd.DataFrame, columns: list) -> pd.DataFrame:
+
+    for col in columns:
+        if col not in df.columns:
+            raise ValueError(f"La colonne '{col}' n'existe pas dans le DataFrame")
+
+    scaler = MinMaxScaler()
+    df[columns] = scaler.fit_transform(df[columns])
+
+    return df
+
+
+
 
 
 def preprocess_data(train, test):
