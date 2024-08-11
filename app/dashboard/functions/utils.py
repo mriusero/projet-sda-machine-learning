@@ -97,6 +97,7 @@ def merge_data(training_data):
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     gc.collect()
+    os.system('clear')
 
     return f"[{timestamp}] {update_message}"
 
