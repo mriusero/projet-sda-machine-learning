@@ -1,78 +1,78 @@
 # main.py
 import pandas as pd
 import streamlit as st
-from .models_base import RandomForestModel, LogisticRegressionModel
 from .preprocessing import clean_data
 from .features import add_features
-from .predictions import make_predictions, save_predictions
-from .validation import calculate_score
+from ..FailuresDetectModel import LSTMModel
+from .validation import generate_submission_file, calculate_score
 
-def process_predictions(scenario_name, train_df, test_df, output_path):
+def instance_model(model_name, min_sequence_length, forecast_months):
+    model_classes = {
+        'LSTMModel': lambda: LSTMModel(min_sequence_length, forecast_months),
+    }
+    if model_name not in model_classes:
+        raise ValueError(f"Modèle '{model_name}' non supporté.")
 
-    train_df = clean_data(train_df)
-    test_df = clean_data(test_df)
+    model_instance = model_classes[model_name]()
+    return model_instance
 
-    train_df = add_features(train_df)
-    test_df = add_features(test_df)
+def process_predictions(scenario, train_df, test_df, output_path):
 
-    # Instancier plusieurs modèles
-    models = []
-    model_configs = []
+    #----LSTDM_Model---------------------------------------------------------------------
+    min_sequence_length = 2
+    forecast_months = 6
+    model = instance_model('LSTMModel', min_sequence_length, forecast_months)
+    X_train, y_train = model.prepare_sequences(train_df)
+    model.train(X_train, y_train)
+    predictions = model.predict_futures_values(test_df)
+    extended_df = model.add_predictions_to_data(scenario, test_df, predictions)
+    model.display_results(extended_df)
+    model.save_predictions(extended_df, output_path)
 
-    models.append(RandomForestModel())
-    models.append(LogisticRegressionModel())
-    model_configs.append(models[0].get_column_config())
-    model_configs.append(models[1].get_column_config())
+    # ----End Scenario ---------------------------------------------------------------------
+    generate_submission_file(output_path)
+    score = calculate_score(output_path)
+    st.write(f"Le score est de {score}")
+    st.dataframe(extended_df)
 
-    # Ajoutez d'autres modèles et configurations si nécessaire
-    predictions_dict = {}
-
-    # Entraîner les modèles
-    for model, config in zip(models, model_configs):
-        X_train = train_df[config['X']]
-        y_train = train_df[config['y']]
-        X_test = test_df[config['X']]
-        y_test = test_df[config['y']] if 'label' in test_df.columns else None
-
-        model.train(X_train, y_train)
-        predictions = model.predict(X_test)
-        predictions_dict[model.__class__.__name__] = predictions
-
-        # Évaluer les performances de chaque modèle (si vérité terrain disponible)
-        if y_test is not None:
-            score = calculate_score(y_test, predictions, test_df['true_rul'])
-            st.write(f"Score for {model.__class__.__name__} in {scenario_name}: {score}")
-
-    # Sauvegarder les prédictions
-    save_predictions(predictions_dict, output_path)
-
-    return predictions_dict
+    return extended_df
 
 
 def handle_scenarios(dataframes):
     keys = ['train', 'pseudo_test', 'pseudo_test_with_truth', 'test']
     cleaned_dfs = {key: clean_data(dataframes[key]) for key in keys}
+    featured_dfs = {key: add_features(cleaned_dfs[key].copy()) for key in keys}
 
-    scenarios = [  # Définir les scénarios avec leurs noms et chemins de fichiers
+    scenarios = [
         {
             'name': 'Scenario1',
-            'test_df': cleaned_dfs['pseudo_test'],
+            'test_df': featured_dfs['pseudo_test'],
             'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario1/'
         },
         {
             'name': 'Scenario2',
-            'test_df': cleaned_dfs['pseudo_test_with_truth'],
+            'test_df': featured_dfs['pseudo_test_with_truth'],
             'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario2/'
         },
         {
             'name': 'Scenario3',
-            'test_df': cleaned_dfs['test'],
+            'test_df': featured_dfs['test'],
             'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario3/'
         }
     ]
-    for scenario in scenarios:  # Traitement de chaque scénario
-        st.markdown(f"## {scenario['name']}")
-        scenario_predictions = process_predictions(scenario['name'], cleaned_dfs['train'], scenario['test_df'],
-                                                   scenario['output_path'])
-        st.dataframe(pd.DataFrame(scenario_predictions))
-        # plot_scatter2(scenario_predictions, 'crack length (arbitary unit)', 'time (months)', 'source')
+
+    selected_scenario_name = st.selectbox(
+        'Choisissez le scénario à exécuter',
+        options=[scenario['name'] for scenario in scenarios]
+    )
+
+    if st.button('Exécuter le scénario'):
+        selected_scenario = next(scenario for scenario in scenarios if scenario['name'] == selected_scenario_name)
+        st.markdown(f"## {selected_scenario['name']}")
+
+        predictions_df = process_predictions(
+            selected_scenario['name'],
+            featured_dfs['train'],
+            selected_scenario['test_df'],
+            selected_scenario['output_path']
+        )
