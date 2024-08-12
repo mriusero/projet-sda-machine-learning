@@ -32,6 +32,12 @@ def page_1():
     df = dataframes['pseudo_test_with_truth'].sort_values(by=['item_index', 'time (months)'])
     df['RUL_inf_6'] = np.where(df['true_rul'] - df['time (months)'] <= 6, 1, 0)
 
+    filtered_df = df[df['RUL_inf_6'] == 1]
+    unique_item_indices = filtered_df['item_index'].unique()
+    crack_failure_number = len(unique_item_indices)
+    st.write(f"Nombre de RUL_inf_6:{crack_failure_number}")
+
+
     update_message = ''
     if st.button("Generate Random Data"):
         update_message = load_data()

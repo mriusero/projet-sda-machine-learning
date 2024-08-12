@@ -1,10 +1,15 @@
 # preprocessing.py
 import pandas as pd
+
+from ..functions import ParticleFilter
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 def clean_data(df):
     """Nettoie les données en supprimant les valeurs manquantes."""
-    return df.dropna()
+
+    df.dropna()
+
+    return df
 
 def standardize_values(df: pd.DataFrame, columns: list) -> pd.DataFrame:
     """Standardise les valeurs des colonnes spécifiées."""

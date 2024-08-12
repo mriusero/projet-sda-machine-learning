@@ -75,22 +75,23 @@ def merge_data(training_data):
     df1 = pd.merge(training_data['degradation_data'], training_data['failure_data'], on='item_id', how='left')
     df1.rename(columns={'item_id': 'item_index'}, inplace=True)
     df1['item_index'] = df1['item_index'].apply(lambda x: f'item_{x}')
-    df1.to_csv('./data/output/training/training_data.csv', index=False)
 
     df2 = training_data['pseudo_testing_data'].copy()
     df2.rename(columns={'item_id': 'item_index'}, inplace=True)
     df2['item_index'] = df2['item_index'].apply(lambda x: f'item_{x}')
-    df2.to_csv('./data/output/pseudo_testing/pseudo_testing_data.csv', index=False)
 
     df3 = training_data['pseudo_testing_data_with_truth'].copy()
     df3.rename(columns={'item_id': 'item_index'}, inplace=True)
     df3['item_index'] = df3['item_index'].apply(lambda x: f'item_{x}')
     df3 = pd.merge(df3, training_data['solution_data'], on='item_index', how='left')
-    df3.to_csv('./data/output/pseudo_testing/pseudo_testing_data_with_truth.csv', index=False)
 
     df4 = training_data['testing_data'].copy()
     df4.rename(columns={'item_id': 'item_index'}, inplace=True)
     df4['item_index'] = df2['item_index'].apply(lambda x: f'{x}')
+
+    df1.to_csv('./data/output/training/training_data.csv', index=False)
+    df2.to_csv('./data/output/pseudo_testing/pseudo_testing_data.csv', index=False)
+    df3.to_csv('./data/output/pseudo_testing/pseudo_testing_data_with_truth.csv', index=False)
     df4.to_csv('./data/output/testing/testing_data_phase1.csv', index=False)
 
     update_message = 'New random data generated'
@@ -115,6 +116,19 @@ def dataframing_data():
         'test': pd.read_csv(paths['test'])
     }
     return dataframes
+
+
+def load_failures():
+
+    df = pd.read_csv('./data/output/training/training_data.csv')
+    if 'item_index' not in df.columns or 'Failure mode' not in df.columns:
+        raise ValueError("Les colonnes 'item_index' ou 'Failure mode' sont manquantes dans le DataFrame.")
+    df = df.groupby('item_index')['Failure mode'].first().reset_index()
+    failures_df = df.rename(columns={'Failure mode': 'Failure mode'})
+    return failures_df
+
+
+
 
 def detect_outliers(df: pd.DataFrame) -> pd.DataFrame:
     outliers_list = []

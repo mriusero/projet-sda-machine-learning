@@ -6,7 +6,7 @@ def generate_submission_file(output_path):
     template = pd.read_csv('../app/data/output/submission/template/submission_template.csv')
 
     lstm_results = pd.read_csv(f"{output_path}/lstm_predictions.csv")
-    lstm_results = lstm_results[['item_index', 'crack_failure']]
+    lstm_results = lstm_results[['item_index', 'crack_failure', 'Failure mode']]
 
     submission_df = template.copy()
     submission_df['predicted_rul'] = 0
@@ -15,6 +15,12 @@ def generate_submission_file(output_path):
         item_index = row['item_index']
         crack_failure = row['crack_failure']
         if crack_failure == 1:
+            submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
+
+    for index, row in lstm_results.iterrows():
+        item_index = row['item_index']
+        failure = row['Failure mode']
+        if failure == 'Control board failure':
             submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
 
     return submission_df.to_csv(f"{output_path}/submission.csv", index=False)

@@ -11,7 +11,8 @@ def page_6():
     """
     st.markdown(texte)
 
-    # Exemple de DataFrame, remplacez ceci par la vraie source de données
-    dataframes = dataframing_data()  # Remplissez ce DataFrame avec vos données
+    dataframes = dataframing_data()
+
+
 
     handle_scenarios(dataframes)
