@@ -5,8 +5,9 @@ def generate_submission_file(output_path):
 
     template = pd.read_csv('../app/data/output/submission/template/submission_template.csv')
 
+    # --- LSTM Model V3 ---
     lstm_results = pd.read_csv(f"{output_path}/lstm_predictions.csv")
-    lstm_results = lstm_results[['item_index', 'crack_failure', 'Failure mode']]
+    lstm_results = lstm_results[['item_index', 'crack_failure', 'Failure mode (lstm)']]
 
     submission_df = template.copy()
     submission_df['predicted_rul'] = 0
@@ -19,8 +20,25 @@ def generate_submission_file(output_path):
 
     for index, row in lstm_results.iterrows():
         item_index = row['item_index']
-        failure = row['Failure mode']
+        failure = row['Failure mode (lstm)']
+        #if failure == 'Crack failure':
+            #submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
         if failure == 'Control board failure':
+            submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
+        if failure == 'Infant Mortality':
+            submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
+
+    # --- Random Forest Classifier Model ---
+    rf_results = pd.read_csv(f"{output_path}/rf_predictions.csv")
+
+    for index, row in rf_results.iterrows():
+        item_index = row['item_index']
+        failure = row['Failure mode (rf)']
+        #if failure == 'Crack failure':
+            #submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
+        if failure == 'Control board failure':
+            submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
+        if failure == 'Infant Mortality':
             submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
 
     return submission_df.to_csv(f"{output_path}/submission.csv", index=False)

@@ -247,7 +247,7 @@ class LSTMModelV3(ModelBase):
                 'time (months)': times,
                 'length_filtered': lengths_filtered,
                 'length_measured': lengths_measured,
-                'Failure mode': None,
+                'Failure mode (lstm)': 'ToDefine',
                 'source': source
             }
             data_dict.update(features)
@@ -285,7 +285,7 @@ class LSTMModelV3(ModelBase):
                 'time (months)': future_times,
                 'length_filtered': future_lengths_filtered,
                 'length_measured': future_lengths_measured,
-                'Failure mode': extended_failure_modes,
+                'Failure mode (lstm)': extended_failure_modes,
                 'source': 1
             })
             extended_data.append(pd.concat([initial_data, forecast_data]))
@@ -294,7 +294,7 @@ class LSTMModelV3(ModelBase):
             raise ValueError("No extended data was created with the provided predictions.")
 
         df_extended = pd.concat(extended_data).reset_index(drop=True)
-        df_extended['crack_failure'] = (df_extended['length_filtered'] >= 0.85).astype(int)
+        df_extended['crack_failure'] = ((df_extended['length_measured'] >= 0.85) | (df_extended['length_filtered'] >= 0.85)).astype(int)
 
         feature_adder = FeatureAdder(min_sequence_length=self.min_sequence_length)
         df_extended = feature_adder.add_features(df_extended, particles_filtery=False)
@@ -318,4 +318,6 @@ class LSTMModelV3(ModelBase):
             plot_scatter2(df, 'time (months)', 'length_filtered', 'item_index')
             plot_scatter2(df, 'time (months)', 'length_filtered', 'crack_failure')
 
-        plot_scatter2(df, 'time (months)', 'length_measured', 'Failure mode')
+        plot_scatter2(df, 'time (months)', 'length_measured', 'Failure mode (lstm)')
+
+        # st.dataframe(extended_df)

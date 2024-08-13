@@ -12,3 +12,5 @@
 /app/data/input/training_data/pseudo_testing_data_with_truth
 /app/data/output/pseudo_testing
 /app/data/output/testing/
+
+*.ipynb

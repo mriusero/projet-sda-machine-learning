@@ -8,6 +8,8 @@ class FeatureAdder:
 
         """Feature Engineering"""
 
+        df['crack_failure'] = (df['length_measured'] >= 0.85).astype(int)
+
         def calculate_rolling_features(series, window_size):
             return {
                 'mean': series.rolling(window=window_size, min_periods=1).mean(),
@@ -55,5 +57,8 @@ class FeatureAdder:
                 df[col_name] = df.groupby('item_index')[col_name].transform(
                     lambda x: replace_nan(x)
                 )
+
+        to_fill_0 = ['length_measured', 'length_filtered']
+        df[to_fill_0] = df[to_fill_0].fillna(0)
 
         return df
