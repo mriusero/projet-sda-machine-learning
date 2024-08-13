@@ -18,8 +18,11 @@ class FeatureAdder:
                 'min': series.rolling(window=window_size, min_periods=1).min()
             }
 
-        def replace_nan(series):
+        def replace_nan_by_mean(series):
             return series.fillna(series.mean())
+
+        def replace_nan_by_one(series):
+            return series.fillna(1)
 
         def particles_filtering(df):
             pf = ParticleFilter()
@@ -55,7 +58,10 @@ class FeatureAdder:
                     lambda x: calculate_rolling_features(x, len(x))[stat]
                 )
                 df[col_name] = df.groupby('item_index')[col_name].transform(
-                    lambda x: replace_nan(x)
+                    lambda x: replace_nan_by_mean(x)
+                )
+                df[col_name] = df.groupby('item_index')[col_name].transform(
+                    lambda x: replace_nan_by_one(x)
                 )
 
         to_fill_0 = ['length_measured', 'length_filtered']
