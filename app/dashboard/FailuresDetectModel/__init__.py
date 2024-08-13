@@ -1,5 +1,5 @@
 from .preprocessing import clean_data, standardize_values, normalize_values
-from .features import add_features
+from .features import FeatureAdder
 from .validation import calculate_score, generate_submission_file
 
 from .statistics import run_statistical_test

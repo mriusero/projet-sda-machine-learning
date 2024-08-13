@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 def clean_data(df):
     """Nettoie les données en supprimant les valeurs manquantes."""
 
+    df = df.rename(columns={'crack length (arbitary unit)': 'length_measured'})
     df.dropna()
 
     return df

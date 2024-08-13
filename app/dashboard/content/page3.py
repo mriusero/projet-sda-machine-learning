@@ -1,5 +1,5 @@
 import streamlit as st
-from ..FailuresDetectModel import clean_data, add_features
+from ..FailuresDetectModel import clean_data
 from ..functions import dataframing_data
 
 

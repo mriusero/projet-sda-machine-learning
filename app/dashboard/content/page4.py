@@ -1,5 +1,5 @@
 import streamlit as st
-from ..FailuresDetectModel import clean_data, add_features, run_statistical_test
+from ..FailuresDetectModel import clean_data, run_statistical_test
 from ..functions import dataframing_data
 
 def page_4():
