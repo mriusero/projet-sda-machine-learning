@@ -1,15 +1,16 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+
+from .models_base import ModelBase
+from ...components import plot_scatter2
+from ...functions import load_failures
+from ..features import FeatureAdder
+
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import LSTM, Dense, Masking, Input
-from tensorflow.keras.optimizers import Adam
-from .models_base import ModelBase
-from ...components import plot_scatter2
-from ...functions import load_failures
-
 
 class LSTMModelV3(ModelBase):
     def __init__(self, min_sequence_length, forecast_months):
@@ -17,12 +18,12 @@ class LSTMModelV3(ModelBase):
         self.min_sequence_length = min_sequence_length
         self.forecast_months = forecast_months
         self.failure_mode_encoder = LabelEncoder()
-        self.model = None  # Model initialisation to None
+        self.model = None                                   # Model initialisation to None
 
     def fit_failure_mode_encoder(self, failures_df):
-        failures_df['Failure mode'].fillna('UNKNOWN', inplace=True)
+        failures_df.fillna({'Failure mode': 'UNKNOWN'}, inplace=True)
         failure_modes = failures_df['Failure mode']
-        self.failure_mode_encoder.fit(failure_modes)
+        return self.failure_mode_encoder.fit(failure_modes)
 
     def encode_failure_mode(self, failure_modes):
         return self.failure_mode_encoder.transform(failure_modes)
@@ -31,120 +32,81 @@ class LSTMModelV3(ModelBase):
         return self.failure_mode_encoder.inverse_transform(encoded_modes)
 
     def train(self, X_train, y_train, y_failure_modes):
-        input_shape = (self.min_sequence_length, 10)  # 10 caractéristiques par séquence
-        num_classes = len(self.failure_mode_encoder.classes_)  # Nombre de classes pour Failure mode
+        input_shape = (self.min_sequence_length, 10)                    # 10 features per sequence
+        num_classes = len(self.failure_mode_encoder.classes_)           # Number of classes for Failure mode
 
-        # Define input layer
-        inputs = Input(shape=input_shape)
+        inputs = Input(shape=input_shape)                               # Define input layer
 
-        # Define LSTM layer
-        x = Masking(mask_value=0.0)(inputs)
+        x = Masking(mask_value=0.0)(inputs)                             # Define LSTM layer
         x = LSTM(50, return_sequences=False)(x)
 
-        # Define outputs
-        forecast_output = Dense(2 * self.forecast_months, name='forecast_output')(x)
+        forecast_output = Dense(2 * self.forecast_months, name='forecast_output')(x)        # Define outputs
         classification_output = Dense(num_classes, activation='softmax', name='classification_output')(x)
 
-        # Create model
-        self.model = Model(inputs=inputs, outputs=[forecast_output, classification_output])
+        self.model = Model(inputs=inputs, outputs=[forecast_output, classification_output])     # Create model
 
-        # Compile model
-        self.model.compile(optimizer='adam',
+        self.model.compile(optimizer='adam',        # Compile model
                            loss={'forecast_output': 'mse', 'classification_output': 'sparse_categorical_crossentropy'},
                            metrics={'forecast_output': 'mae', 'classification_output': 'accuracy'})
 
-        # Print for debugging
-        print(np.isnan(X_train).any(), np.isinf(X_train).any())
+        print(np.isnan(X_train).any(), np.isinf(X_train).any())         # Print for debugging
         print(np.isnan(y_train).any(), np.isinf(y_train).any())
         print(np.isnan(y_failure_modes).any(), np.isinf(y_failure_modes).any())
 
-        # Train model
-        self.model.fit(X_train, {'forecast_output': y_train, 'classification_output': y_failure_modes},
-                       epochs=50, batch_size=32, validation_split=0.2)
+        num_epochs = 50                                                 # Training progress
+        with st.spinner('Training the model...'):
+            progress_bar = st.progress(0)
+            for epoch in range(num_epochs):
+                self.model.fit(X_train, {'forecast_output': y_train, 'classification_output': y_failure_modes},
+                                        epochs=1, batch_size=32, validation_split=0.2)
+                progress_bar.progress((epoch + 1) / num_epochs)
+            progress_bar.empty()
 
     def predict(self, X_test):
         if self.model is None:
-            raise ValueError("Le modèle n'a pas été entraîné.")
+            raise ValueError("The model has not been trained.")
 
-        # Prédictions de valeurs temporelles et de Failure mode
-        predictions = self.model.predict(X_test)
+        with st.spinner('Generating predictions...'):           # Predictions of time series values and Failure mode
+            progress_bar = st.progress(0)
+            num_batches = len(X_test) // 32
+            predictions = []
+            for i in range(num_batches):
+                batch = X_test[i*32:(i+1)*32]
+                batch_predictions = self.model.predict(batch)
+                predictions.append(batch_predictions)
+                progress_bar.progress((i + 1) / num_batches)
+            predictions = np.concatenate(predictions, axis=0)
+            progress_bar.empty()
+        st.success('Predictions generated successfully!')
 
-        forecast_predictions = predictions[0]  # Prédictions des valeurs temporelles
-        classification_predictions = np.argmax(predictions[1], axis=1)  # Prédictions de Failure mode
+        forecast_predictions = predictions[0]                                   # Time series predictions
+        classification_predictions = np.argmax(predictions[1], axis=1)          # Failure mode predictions
 
         return forecast_predictions, classification_predictions
 
-    def add_features(self, df):
-
-        to_recalcul = ['rolling_means_filtered',
-                       'rolling_stds_filtered',
-                       'rolling_maxs_filtered',
-                       'rolling_mins_filtered',
-                       'rolling_means_measured',
-                       'rolling_stds_measured',
-                       'rolling_maxs_measured',
-                       'rolling_mins_measured']
-
-        to_delete = [col for col in to_recalcul if col in df.columns]
-        df = df.drop(columns=to_delete, errors='ignore')
-
-        window_size = self.min_sequence_length
-
-        # Calculer les caractéristiques supplémentaires avec des fenêtres mobiles
-        def calculate_rolling_features(series):
-            return {
-                'mean': series.rolling(window=window_size, min_periods=1).mean(),
-                'std': series.rolling(window=window_size, min_periods=1).std(),
-                'max': series.rolling(window=window_size, min_periods=1).max(),
-                'min': series.rolling(window=window_size, min_periods=1).min()
-            }
-
-        def replace_nan(series):
-            #columns_mean = series.columns.mean()
-            return series.fillna(series.mean())
-
-        # Calcul des caractéristiques et remplacement des NaN
-        for length_type in ['length_measured', 'length_filtered']:
-            for stat in ['mean', 'std', 'max', 'min']:
-                col_name = f'rolling_{stat}_{length_type}'
-                df[col_name] = df.groupby('item_index')[length_type].transform(
-                    lambda x: calculate_rolling_features(x)[stat]
-                )
-                df[col_name] = df.groupby('item_index')[col_name].transform(
-                    lambda x: replace_nan(x)
-                )
-
-        return df
-
     def prepare_train_sequences(self, df):
-        df = self.add_features(df)  # Ajouter les nouvelles caractéristiques
 
         item_indices = df['item_index'].unique()
         sequences = []
         targets = []
         failure_modes = []
 
-
         failures_df = load_failures()
-        self.fit_failure_mode_encoder(failures_df)  # Appel unique ici
+        self.fit_failure_mode_encoder(failures_df)                                          # Unique call here
         failure_mode_dict = failures_df.set_index('item_index')['Failure mode'].to_dict()
-
 
         for item_index in item_indices:
 
             item_data = df[df['item_index'] == item_index].sort_values(by='time (months)')
-
             item_data['Failure mode'] = failure_mode_dict.get(item_index, None)
+
             times = item_data['time (months)'].values
             lengths_filtered = item_data['length_filtered'].values
             lengths_measured = item_data['length_measured'].values
-
-            # Nouvelles caractéristiques
             rolling_means_filtered = item_data['rolling_mean_length_filtered'].values
             rolling_stds_filtered = item_data['rolling_std_length_filtered'].values
             rolling_maxs_filtered = item_data['rolling_max_length_filtered'].values
             rolling_mins_filtered = item_data['rolling_min_length_filtered'].values
-
             rolling_means_measured = item_data['rolling_mean_length_measured'].values
             rolling_stds_measured = item_data['rolling_std_length_measured'].values
             rolling_maxs_measured = item_data['rolling_max_length_measured'].values
@@ -152,8 +114,8 @@ class LSTMModelV3(ModelBase):
 
             print(f"item_index: {item_index}, Length of data: {len(times)}")
 
-
             sequence_length = self.min_sequence_length
+
             for i in range(len(times) - sequence_length - self.forecast_months + 1):
                 seq = np.column_stack((
                     times[i:i + sequence_length],
@@ -175,29 +137,26 @@ class LSTMModelV3(ModelBase):
                 ))
                 targets.append(target)
 
-                # Encode failure mode
-                item_data = item_data.dropna(subset=['Failure mode'])
+                item_data = item_data.dropna(subset=['Failure mode'])               # Encode failure mode
                 mode = item_data['Failure mode'].iloc[i + sequence_length]
                 if pd.isna(mode):
-                    mode = 'UNKNOWN'  # Remplacer les NaN par 'UNKNOWN'
+                    mode = 'UNKNOWN'                                                # Replace NaNs with 'UNKNOWN'
                 failure_modes.append(self.encode_failure_mode([mode])[0])
 
         if len(sequences) == 0:
-            raise ValueError("Aucune séquence valide n'a été créée avec les données fournies.")
+            raise ValueError("No valid sequence was created with the provided data.")
 
         sequences_padded = np.array(pad_sequences(sequences, maxlen=self.min_sequence_length, padding='post', dtype='float32'))
         targets = np.array(targets).reshape(-1, 2 * self.forecast_months)
         failure_modes = np.array(failure_modes)
-        print(f"Failures_mode encoded :{failure_modes}")
+        print(f"Encoded failure modes: {failure_modes}")
 
         return sequences_padded, targets, failure_modes
 
     def predict_futures_values(self, df):
         if self.model is None:
-            raise ValueError("Le modèle n'a pas été entraîné.")
-
+            raise ValueError("The model has not been trained.")
         def extract_features(item_data):
-            item_data = self.add_features(item_data)
             features = {
                 'times': item_data['time (months)'].values,
                 'length_filtered': item_data['length_filtered'].values,
@@ -232,38 +191,46 @@ class LSTMModelV3(ModelBase):
         all_predictions = []
         all_failure_mode_predictions = []
 
-        for item_index in item_indices:
-            item_data = df[df['item_index'] == item_index].sort_values(by='time (months)')
-            features = extract_features(item_data)
-            last_sequence_padded = prepare_test_sequence(features)
-            prediction = self.model.predict(last_sequence_padded)
+        with st.spinner('Calculating future values...'):
 
-            # Vérifier la structure des prédictions
-            print("Prediction shape:", prediction[0].shape, prediction[1].shape)
+            progress_bar = st.progress(0)
+            num_items = len(item_indices)
 
-            # Séparer les prédictions pour length_filtered, length_measured et Failure mode
-            forecast_output = prediction[0]  # Prédictions des valeurs temporelles
-            pred_lengths_filtered = forecast_output[:, :self.forecast_months]
-            pred_lengths_measured = forecast_output[:, self.forecast_months:]
-            pred_failure_mode = np.argmax(prediction[1], axis=1)  # Prédictions de Failure mode
+            for idx, item_index in enumerate(item_indices):
 
-            # Vérifier les tailles des tableaux avant la concaténation
-            print("pred_lengths_filtered shape:", pred_lengths_filtered.shape)
-            print("pred_lengths_measured shape:", pred_lengths_measured.shape)
+                item_data = df[df['item_index'] == item_index].sort_values(by='time (months)')
+                features = extract_features(item_data)
+                last_sequence_padded = prepare_test_sequence(features)
+                prediction = self.model.predict(last_sequence_padded)
 
-            combined_predictions = np.column_stack((pred_lengths_filtered.flatten(), pred_lengths_measured.flatten()))
-            all_predictions.append(combined_predictions)
-            all_failure_mode_predictions.append(pred_failure_mode)
+                print("Prediction shape:", prediction[0].shape, prediction[1].shape)    # Check prediction structure
 
+                forecast_output = prediction[0]                                         # Time series predictions
+                pred_lengths_filtered = forecast_output[:, :self.forecast_months]
+                pred_lengths_measured = forecast_output[:, self.forecast_months:]
+                pred_failure_mode = np.argmax(prediction[1], axis=1)                    # Failure mode predictions
+
+                print("pred_lengths_filtered shape:", pred_lengths_filtered.shape)  # Check array sizes for concat
+                print("pred_lengths_measured shape:", pred_lengths_measured.shape)
+
+                combined_predictions = np.column_stack((pred_lengths_filtered.flatten(), pred_lengths_measured.flatten()))
+                all_predictions.append(combined_predictions)
+                all_failure_mode_predictions.append(pred_failure_mode)
+
+                progress_bar.progress((idx + 1) / num_items)
+
+            progress_bar.empty()
+
+        st.success('Future values calculation completed!')
         return all_predictions, all_failure_mode_predictions
 
     def add_predictions_to_data(self, scenario, df, predictions, failure_mode_predictions):
         def prepare_initial_data(item_data, item_index, source):
+
             times = item_data['time (months)'].values
             lengths_filtered = item_data['length_filtered'].values
             lengths_measured = item_data['length_measured'].values
 
-            item_data = self.add_features(item_data)
             features = {
                 'rolling_means_filtered': item_data['rolling_mean_length_filtered'].values,
                 'rolling_stds_filtered': item_data['rolling_std_length_filtered'].values,
@@ -296,6 +263,7 @@ class LSTMModelV3(ModelBase):
         extended_data = []
 
         for idx, item_index in enumerate(item_indices):
+
             item_data = df[df['item_index'] == item_index].sort_values(by='time (months)')
             max_time = np.max(item_data['time (months)'].values)
             forecast_length = len(predictions[idx])
@@ -320,15 +288,16 @@ class LSTMModelV3(ModelBase):
                 'Failure mode': extended_failure_modes,
                 'source': 1
             })
-
             extended_data.append(pd.concat([initial_data, forecast_data]))
 
         if not extended_data:
-            raise ValueError("Aucune donnée étendue n'a été créée avec les prévisions fournies.")
+            raise ValueError("No extended data was created with the provided predictions.")
 
         df_extended = pd.concat(extended_data).reset_index(drop=True)
-        df_extended['crack_failure'] = (df_extended['length_measured'] >= 0.85).astype(int)
-        df_extended = self.add_features(df_extended)
+        df_extended['crack_failure'] = (df_extended['length_filtered'] >= 0.85).astype(int)
+
+        feature_adder = FeatureAdder(min_sequence_length=self.min_sequence_length)
+        df_extended = feature_adder.add_features(df_extended, particles_filtery=False)
 
         return df_extended
 
@@ -336,7 +305,7 @@ class LSTMModelV3(ModelBase):
         file_path = f"{output_path}/lstm_predictions.csv"
         df.to_csv(file_path, index=False)
 
-        return f"Predictions saved successfully : {output_path}"
+        return f"Predictions saved successfully: {output_path}"
 
     def display_results(self, df):
         col1, col2 = st.columns(2)
