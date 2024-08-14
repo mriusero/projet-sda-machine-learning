@@ -1,5 +1,7 @@
 import os
+import gc
 import streamlit as st
+from .functions import load_data
 
 def load_css():
     css_path = os.path.join(os.path.dirname(__file__), 'styles.css')
@@ -29,6 +31,9 @@ def app_layout():
                                          "#6 Prediction_",
                                          ])
 
+    # Ajout d'une case à cocher pour décider d'exécuter load_data
+    execute_load_data = st.sidebar.checkbox('Random data generation', value=False)
+
     if page == "#0 Introduction_":
         page_0()
     elif page == "#1 Exploration_":
@@ -44,10 +49,13 @@ def app_layout():
     elif page == "#6 Prediction_":
         page_6()
 
+    if execute_load_data:
+        update_message = load_data()
 
+        print(update_message)
+        st.sidebar.write(update_message)
 
-
-
+    gc.collect()
 
 
 
