@@ -94,13 +94,13 @@ def merge_data(training_data):
     df3.to_csv('./data/output/pseudo_testing/pseudo_testing_data_with_truth.csv', index=False)
     df4.to_csv('./data/output/testing/testing_data_phase1.csv', index=False)
 
-    update_message = 'New random data generated'
+    update_message = 'Random data generated with success !'
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     gc.collect()
     os.system('clear')
 
-    return f"[{timestamp}] {update_message}"
+    return f"{update_message} [{timestamp}]"
 
 def dataframing_data():
     paths = {

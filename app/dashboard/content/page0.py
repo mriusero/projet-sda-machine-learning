@@ -2,12 +2,8 @@ import streamlit as st
 
 
 def page_0():
-    st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)
-    st.markdown('<div class="header">Marius Ayrault - SDA 2024/2025</div>', unsafe_allow_html=True)
-    st.text('_'*100)
     context = """ 
 # Phase I : Remaining Useful Life (RUL)_
---> https://www.kaggle.com/competitions/predictive-maintenance-for-industrial-robots-i
 
 ## I.1) Context
 The purpose consist to predict remaining useful life (RUL) of an industrial robot based on monitored data from three failure modes.
@@ -46,9 +42,7 @@ $y_{th} = 0.85$.
 """
     st.markdown(knowledges)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        process_noise = """
+    process_noise = """
 ### b) Process noise, observation noise, and state space models
 
 
@@ -100,11 +94,10 @@ $$
 \omega_{0,k-1} \sim \text{Normal}(0, 0.01)
 $$
 """
-        st.markdown(process_noise)
+    st.markdown(process_noise)
 
-    with col2:
-        prediction = """
-### c) prediction and metrics
+    prediction = """
+### c) Prediction and metrics
 
 Le participant doit prédire si le RUL d'un élément est inférieur à $6$ mois :
 
@@ -127,7 +120,7 @@ $$
 où $\text{Reward}_i$ est calculé comme mentionné précédemment.
 
 """
-        st.markdown(prediction)
+    st.markdown(prediction)
 
     col1, col2 = st.columns(2)
 
@@ -199,43 +192,42 @@ où $\text{Reward}_i$ est calculé comme mentionné précédemment.
 
         // Chaque fichier CSV dans ce dossier correspond à un échantillon spécifique.
         // Le nom du fichier `item_X` correspond à l'identifiant de l'échantillon (`item_id`) dans le fichier `failure_data.csv`.
+    
+    """
+        st.markdown(train_test)
 
-### # Testing_
-Pour évaluer la performance du modèle, un jeu de données de "pseudo-test" basé sur le jeu de données de training permet d'évaluer la performance de prédiction.
+        testing = """
+    ### # Testing_
+        Pour évaluer la performance du modèle, un jeu de données de "pseudo-test" basé sur le jeu de données de training permet d'évaluer la performance de prédiction.
+        
+        `training/pseudo_testing_data`  
+            --> un jeu de données spécifiquement conçu pour évaluer les performances du modèle de manière similaire à un test. 
+        
+        `training/pseudo_testing_data_with_truth`  
+            --> un jeu de données similaire à pseudo_testing_data, mais inclut également les valeurs réelles pour évaluer les prédictions.  
+            --> les fichiers dans ce dossier incluent Solution.csv, qui contient les vérités de terrain pour les prévisions de RUL.
+        
+        `testing`  
+            --> contient des données de test qui sont utilisées pour évaluer la performance du modèle dans un contexte plus général.  
+            --> Il y a différents sous-dossiers pour chaque scénario de test (scenario_0 à scenario_9) 
+    """
+        st.markdown(testing)
 
-`training/pseudo_testing_data`  
-    --> un jeu de données spécifiquement conçu pour évaluer les performances du modèle de manière similaire à un test. 
-
-`training/pseudo_testing_data_with_truth`  
-    --> un jeu de données similaire à pseudo_testing_data, mais inclut également les valeurs réelles pour évaluer les prédictions.  
-    --> les fichiers dans ce dossier incluent Solution.csv, qui contient les vérités de terrain pour les prévisions de RUL.
-
-`testing`  
-    --> contient des données de test qui sont utilisées pour évaluer la performance du modèle dans un contexte plus général.  
-    --> Il y a différents sous-dossiers pour chaque scénario de test (scenario_0 à scenario_9) 
-
+    synthesis = """\n
 Le jeu de données de test dans le dossier `testing/group_0` est créé à partir des séquences complètes de fonctionnement,
 jusqu'à la défaillance en les tronquant aléatoirement à un moment donné $t_end$. L'objectif est de prédire la RUL : Remaining Useful Life à partir de ce point $t_end$. 
 
 La troncature est effectuée de la manière suivante :
 - si le temps jusqu'à la défaillance est inférieur ou égal à $6$, nous conservons la séquence telle quelle.
 - si le temps jusqu'à la défaillance est supérieur à $6$, elle est tronquée à un point temporel aléatoire $t_end$, généré à partir d'une distribution uniforme de [1, ttf-1].
-    
-    """
-        st.markdown(train_test)
-
-
-
-
-
-
+        """
+    st.markdown(synthesis)
 
 
 
     phase2 ="""
 # Phase II : _
 
---> https://www.kaggle.com/competitions/predictive-maintenance-of-a-robot-ii
     """
     st.markdown(phase2)
 

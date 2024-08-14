@@ -40,7 +40,7 @@ def run_statistical_test(df, test_type, *args):
 
     if test_type == 'normality':
         result, p_value = tester.test_normality(args[0])
-        return f"Normality Test - p-value: {p_value}, Result: {'Normal' if result else 'Not Normal'}"
+        return f"Normality Test on {args[0]} - p-value: {p_value}, Result: {'Normal' if result else 'Not Normal'}"
 
     elif test_type == 'ttest':
         result, p_value = tester.test_t_test(args[0], args[1])
