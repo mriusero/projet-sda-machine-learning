@@ -1,15 +1,18 @@
+import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
 from sklearn.model_selection import learning_curve
 import scipy.stats as stats
+import streamlit as st
 
 class DisplayData:
     def __init__(self, data):
         self.data = data
 
     def plot_correlation_matrix(self):
-        corr = self.data.corr()
+        numeric_df = self.data.select_dtypes(include=[float, int])
+        corr = numeric_df.corr()
         fig = px.imshow(corr, color_continuous_scale='Viridis', text_auto=True)
         fig.update_layout(title='Correlation Matrix', title_x=0.5)
         return fig
@@ -62,7 +65,7 @@ class DisplayData:
     def plot_qq_diagram(self, residuals):
         fig = go.Figure()
 
-        # Calculer le QQ plot
+        # QQ plot
         qq = stats.probplot(residuals, dist="norm", plot=None)
         x = qq[0][0]  # Quantiles théoriques
         y = qq[0][1]  # Quantiles observés
@@ -75,4 +78,51 @@ class DisplayData:
                           yaxis_title='Quantiles Observés')
 
         return fig
+
+    def plot_predictions_histograms(self, true_rul, predicted_rul):
+        fig = go.Figure()
+        fig.add_trace(go.Histogram(x=true_rul, nbinsx=30, name='True RUL', opacity=0.5, marker_color='blue'))
+        fig.add_trace(
+            go.Histogram(x=predicted_rul, nbinsx=30, name='Predicted RUL', opacity=0.5, marker_color='#ff322a'))
+        fig.update_layout(
+            title='Distribution of True and Predicted RUL',
+            xaxis_title='RUL (months)',
+            yaxis_title='Frequency',
+            barmode='overlay'
+        )
+        return fig
+
+    def plot_distribution_histogram(self, column_name):
+        df = self.data
+
+        if column_name not in df.columns:
+            raise ValueError(f"La colonne '{column_name}' n'existe pas dans le DataFrame.")
+
+        data = df[column_name]
+
+        histogram = go.Histogram(
+            x=data,
+            histnorm='probability density',
+            name='Histogramme',
+            opacity=0.75
+        )
+        kde = gaussian_kde(data, bw_method='scott')
+        x_values = np.linspace(min(data), max(data), 1000)
+        kde_values = kde(x_values)
+        curve = go.Scatter(
+            x=x_values,
+            y=kde_values,
+            mode='lines',
+            name='Courbe de distribution',
+            line=dict(color='red')
+        )
+        fig = go.Figure(data=[histogram, curve])
+        fig.update_layout(
+            title=f'Distribution de la colonne {column_name}',
+            xaxis_title=column_name,
+            yaxis_title='Densité',
+            template='plotly_white'
+        )
+        return fig
+
 

@@ -56,7 +56,7 @@ class RandomForestClassifierModel:
         print(f"Training labels shape: {y_train.shape}")
 
         self.model.fit(X_train, y_train)
-        st.success('Random Forest model trained successfully!')
+
 
     def predict(self, X_test):
         if self.model is None:
@@ -73,9 +73,9 @@ class RandomForestClassifierModel:
         prediction_df.loc[:, 'item_index'] = prediction_df['item_index'].apply(lambda x: f'item_{x}')
         return prediction_df
 
-    def save_predictions(self, predictions, output_path):
+    def save_predictions(self, predictions, output_path, step):
 
-        file_path = f"{output_path}/rf_predictions.csv"
+        file_path = f"{output_path}/rf_predictions_{step}.csv"
         predictions.to_csv(file_path, index=False)
         #st.success(f"Predictions saved successfully at {file_path}")
 

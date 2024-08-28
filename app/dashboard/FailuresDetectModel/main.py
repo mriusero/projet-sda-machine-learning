@@ -1,97 +1,90 @@
 # main.py
+
 import streamlit as st
-from .preprocessing import clean_data
-from .features import add_features
-from ..FailuresDetectModel import LSTMModel, LSTMModelV2, LSTMModelV3
+from ..FailuresDetectModel import (RandomForestClassifierModel, LSTMModel)
 from .validation import generate_submission_file, calculate_score
-from sklearn.preprocessing import LabelEncoder
 
 def instance_model(model_name):
     model_classes = {
-        'LSTMModel': lambda: LSTMModel(
-            min_sequence_length=2,
-            forecast_months=6),
-        'LSTMModelV2': lambda: LSTMModelV2(
-            min_sequence_length=2,
-            forecast_months=6),
-        'LSTMModelV3': lambda: LSTMModelV3(
-            min_sequence_length=2,
-            forecast_months=6)
+        'LSTMModel': lambda: LSTMModel(min_sequence_length=2, forecast_months=6),
+        'RandomForestClassifierModel': lambda: RandomForestClassifierModel(),
     }
     if model_name not in model_classes:
         raise ValueError(f"Modèle '{model_name}' non supporté.")
+    return model_classes[model_name]()
 
-    model_instance = model_classes[model_name]()
-    return model_instance
+@st.cache_resource
+def ml_pipeline(model_name, train_df, pseudo_test_with_truth_df, test_df, output_path):
+    """
+    Fonction qui exécute les trois phases du pipeline de machine learning pour un modèle donné.
 
-def process_predictions(scenario, train_df, test_df, output_path):
+    Args:
+        model_name (str):                          Nom du modèle.
+        train_df (DataFrame):                      Jeu de données d'entraînement.
+        pseudo_test_with_truth_df (DataFrame):     Jeu de données de test pour la validation croisée.
+        test_df (DataFrame):                       Jeu de données de test final pour les prédictions.
+        output_path (str):                         Chemin de sortie pour sauvegarder les résultats.
+    """
+    model = instance_model(model_name)    # Instancier le modèle
 
-    #----LSTM_Model---------------------------------------------------------------------
-    #model = instance_model('LSTMModel')
-    #X_train, y_train = model.prepare_sequences(train_df)
-    #model.train(X_train, y_train)
-    #predictions = model.predict_futures_values(test_df)
-    #extended_df = model.add_predictions_to_data(scenario, test_df, predictions)
-    #model.display_results(extended_df)
-    #model.save_predictions(extended_df, output_path)
+    # -- TRAINING --
+    if model_name == 'RandomForestClassifierModel' and hasattr(model, 'prepare_data'):
+        X_, y_ = model.prepare_data(train_df)
+    elif model_name == 'LSTMModel' and hasattr(model, 'prepare_train_sequences'):
+        X_, y_ = model.prepare_train_sequences(train_df)
+    else:
+        raise SystemError(f'No appropriated class structuration for {model_name} training')
+    model.train(X_, y_)
+    st.success(f"Model trained successfully!")
 
-    # ----LSTM Model V3---------------------------------------------------------------------
-    model = instance_model('LSTMModelV3')
-    X_train, y_train, y_failure_modes = model.prepare_train_sequences(train_df)
-    model.train(X_train, y_train, y_failure_modes)
-    predictions, failure_mode_predictions = model.predict_futures_values(test_df)
-    extended_df = model.add_predictions_to_data(scenario, test_df, predictions, failure_mode_predictions)
-    model.display_results(extended_df)
-    model.save_predictions(extended_df, output_path)
+    # -- CROSS VALIDATION --
+    if model_name == 'RandomForestClassifierModel' and hasattr(model, 'prepare_data'):
+        X_, y_ = model.prepare_data(pseudo_test_with_truth_df)
+        predictions = model.predict(X_)
+        model.save_predictions(predictions, output_path, step='cross-val')
+    elif model_name == 'LSTMModel' and hasattr(model, 'predict_futures_values'):
+        all_predictions = model.predict_futures_values(pseudo_test_with_truth_df)
+        predictions = model.add_predictions_to_data(pseudo_test_with_truth_df, all_predictions)
+        model.save_predictions(predictions, output_path, step='cross-val')
+    else:
+        raise SystemError(f'No appropriated class structuration for {model_name} Cross validation')
+    generate_submission_file(model_name, output_path, step='cross-val')
+    score = calculate_score(output_path, step='cross-val')
+    st.write(f"Score de cross validation pour {model_name}: {score}")
 
-    # Ajouter les prédictions aux données et sauvegarder
-    #df_with_predictions = model.add_predictions_to_data(test_df, predictions)
-    #model.save_predictions(df_with_predictions, 'chemin/vers/output')
+    # -- PREDICTION --
+    if model_name == 'RandomForestClassifierModel' and hasattr(model, 'prepare_data'):
+        X_test, _ = model.prepare_data(test_df, target_col=None)
+        predictions = model.predict(X_test)
+        model.save_predictions(predictions, output_path, step='final-test')
 
-    # ----End Scenario ---------------------------------------------------------------------
-    generate_submission_file(output_path)
-    score = calculate_score(output_path)
-    st.write(f"Le score est de {score}")
-    st.dataframe(extended_df)
+    elif model_name == 'LSTMModel' and hasattr(model, 'predict_futures_values'):
+        all_predictions = model.predict_futures_values(test_df)
+        predictions = model.add_predictions_to_data(test_df, all_predictions)
+        model.save_predictions(predictions, output_path, step='final-test')
+    else:
+        raise SystemError(f'No appropriated class structuration for {model_name} final testing')
+    generate_submission_file(model_name, output_path, step='final-test')
+    final_score = calculate_score(output_path, step='final-test')
+    st.write(f"Le score final pour {model_name} est de {final_score}")
 
-    return extended_df
+    # model.display_results(predictions)
 
+def handle_models():
+    """
+    Fonction de gestion des modèles qui exécute le pipeline pour chaque modèle.
+    """
+    train_df = st.session_state.data.df['train']                                         # Dataset configs
+    pseudo_test_with_truth_df = st.session_state.data.df['pseudo_test_with_truth']
+    test_df = st.session_state.data.df['test']
 
-def handle_scenarios(dataframes):
+    output_paths = {
+        'LSTMModel': 'data/output/submission/lstm',
+        'RandomForestClassifierModel': 'data/output/submission/random_forest'
+    }
+    models_to_run = ['RandomForestClassifierModel', 'LSTMModel']  # Models to execute
 
-    keys = ['train', 'pseudo_test', 'pseudo_test_with_truth', 'test']
-    df = {key: (dataframes[key]) for key in keys}
-
-    scenarios = [
-        {
-            'name': 'Scenario1',
-            'test_df': df['pseudo_test'],
-            'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario1/'
-        },
-        {
-            'name': 'Scenario2',
-            'test_df': df['pseudo_test_with_truth'],
-            'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario2/'
-        },
-        {
-            'name': 'Scenario3',
-            'test_df': df['test'],
-            'output_path': '/Users/mariusayrault/GitHub/Sorb-Data-Analytics/projet-sda-machine-learning/app/data/output/submission/scenario3/'
-        }
-    ]
-
-    selected_scenario_name = st.selectbox(
-        'Choisissez le scénario à exécuter',
-        options=[scenario['name'] for scenario in scenarios]
-    )
-    if st.button('Exécuter le scénario'):
-        selected_scenario = next(scenario for scenario in scenarios if scenario['name'] == selected_scenario_name)
-        preprocessed = lambda x: add_features(clean_data(x), particles_filtery=True)
-
-        st.markdown(f"## {selected_scenario['name']}")
-        predictions_df = process_predictions(
-            selected_scenario['name'],
-            preprocessed(df['train']),
-            preprocessed(selected_scenario['test_df']),
-            selected_scenario['output_path'],
-        )
+    if st.button('Run predictions'):
+        for model_name in models_to_run:
+            st.markdown(f"## #{model_name} predictions_")
+            ml_pipeline(model_name, train_df, pseudo_test_with_truth_df, test_df, output_paths[model_name])

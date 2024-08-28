@@ -8,14 +8,19 @@ class FeatureAdder:
 
         """Feature Engineering"""
 
-        df['crack_failure'] = (df['length_measured'] >= 0.85).astype(int)
-
         def calculate_rolling_features(series, window_size):
             return {
                 'mean': series.rolling(window=window_size, min_periods=1).mean(),
                 'std': series.rolling(window=window_size, min_periods=1).std(),
                 'max': series.rolling(window=window_size, min_periods=1).max(),
                 'min': series.rolling(window=window_size, min_periods=1).min()
+            }
+        def calculate_static_features(series):
+            return {
+                'mean': series.mean(),
+                'std': series.std(),
+                'max': series.max(),
+                'min': series.min()
             }
 
         def replace_nan_by_mean(series):
@@ -43,18 +48,16 @@ class FeatureAdder:
 
         else:
             to_recall = [
-                'rolling_means_filtered', 'rolling_stds_filtered',
-                'rolling_maxs_filtered', 'rolling_mins_filtered',
-                'rolling_means_measured', 'rolling_stds_measured',
-                'rolling_maxs_measured', 'rolling_mins_measured'
+                'rolling_means_filtered', 'rolling_stds_filtered', 'rolling_maxs_filtered', 'rolling_mins_filtered',
+                'rolling_means_measured', 'rolling_stds_measured', 'rolling_maxs_measured', 'rolling_mins_measured'
             ]
             existing_columns = [col for col in to_recall if col in df.columns]
             df = df.drop(columns=existing_columns)
 
-        for length_type in ['length_measured', 'length_filtered']:
+        for col in ['time (months)', 'length_measured', 'length_filtered']:
             for stat in ['mean', 'std', 'max', 'min']:
-                col_name = f'rolling_{stat}_{length_type}'
-                df[col_name] = df.groupby('item_index')[length_type].transform(
+                col_name = f'rolling_{stat}_{col}'
+                df[col_name] = df.groupby('item_index')[col].transform(
                     lambda x: calculate_rolling_features(x, len(x))[stat]
                 )
                 df[col_name] = df.groupby('item_index')[col_name].transform(
@@ -63,8 +66,18 @@ class FeatureAdder:
                 df[col_name] = df.groupby('item_index')[col_name].transform(
                     lambda x: replace_nan_by_one(x)
                 )
+                col_name = f'static_{stat}_{col}'
+                df[col_name] = df.groupby('item_index')[col].transform(
+                    lambda x: calculate_static_features(x)[stat]
+                )
+                df[col_name] = df.groupby('item_index')[col_name].transform(
+                    lambda x: replace_nan_by_mean(x)
+                )
+                df[col_name] = df.groupby('item_index')[col_name].transform(
+                    lambda x: replace_nan_by_one(x)
+                )
 
-        to_fill_0 = ['length_measured', 'length_filtered']
+        to_fill_0 = ['time (months)', 'length_measured', 'length_filtered']
         df[to_fill_0] = df[to_fill_0].fillna(0)
 
         return df
