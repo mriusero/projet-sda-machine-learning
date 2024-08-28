@@ -18,14 +18,29 @@ def page_1():
     col1, col2 = st.columns([2, 2])
 
     with col1:
-        st.session_state.data.plot_scatter_with_color(df_key='train', x_col='time (months)', y_col='length_measured', color_col='Failure mode')
-        st.session_state.data.plot_multiple_histogram(df_key='train', x_col='time (months)', y_col='length_measured', color_col='Failure mode')
+        st.session_state.data.plot_scatter_with_color(df_key='train',
+                                                      x_col='time (months)',
+                                                      y_col='length_measured',
+                                                      color_col='Failure mode')
+
+        st.session_state.data.plot_multiple_histogram(df_key='train',
+                                                      x_col='time (months)',
+                                                      y_col='length_measured',
+                                                      color_col='Failure mode')
 
     with col2:
-        st.session_state.data.plot_scatter_with_color(df_key='train', x_col='time (months)', y_col='length_filtered', color_col='Failure mode')
-        st.session_state.data.plot_multiple_histogram(df_key='train', x_col='time (months)', y_col='length_filtered', color_col='Failure mode')
+        st.session_state.data.plot_scatter_with_color(df_key='train',
+                                                      x_col='time (months)',
+                                                      y_col='length_filtered',
+                                                      color_col='Failure mode')
+
+        st.session_state.data.plot_multiple_histogram(df_key='train',
+                                                      x_col='time (months)',
+                                                      y_col='length_filtered',
+                                                      color_col='Failure mode')
 
     st.session_state.data.plot_correlation_matrix(df_key='train')
+    st.session_state.data.plot_multiple_histogram('train', 'rul (months)', 'length_filtered', 'Failure mode')
 
     texte = """
 ## #PSEUDO_TEST_WITH_TRUTH_
