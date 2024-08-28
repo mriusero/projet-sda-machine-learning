@@ -1,9 +1,8 @@
 import streamlit as st
-from ..FailuresDetectModel import clean_data, add_features, run_statistical_test
+from ..FailuresDetectModel import clean_data, run_statistical_test
 from ..functions import dataframing_data
 
 def page_4():
-    st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)                            #TITLE
     st.markdown('<div class="header">#4 Statistics & Preprocessing_</div>', unsafe_allow_html=True)
     texte = """
 

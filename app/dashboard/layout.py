@@ -1,5 +1,12 @@
 import os
+import gc
 import streamlit as st
+from .functions import load_data, DataVisualizer
+from .components import github_button
+
+
+update_message = 'Data loaded'
+display = ""
 
 def load_css():
     css_path = os.path.join(os.path.dirname(__file__), 'styles.css')
@@ -14,13 +21,14 @@ def app_layout():
         page_icon="",
         layout='wide',
         initial_sidebar_state="auto",
-        menu_items={
-            'About': "#Github Repository :\n\nhttps://github.com/mriusero/projet-sda-machine-learning/blob/main/README.md"
-        }
     )
 
     load_css()
-    page = st.sidebar.radio("Overview", ["#0 Introduction_",
+    st.sidebar.markdown("# --- MACHINE LEARNING ---\n\n"
+                        " ## *'Predictive maintenance through failure prediction on robots'*\n")
+
+
+    page = st.sidebar.radio("", ["#0 Introduction_",
                                          "#1 Exploration_",
                                          "#2 Cleaning_",
                                          "#3 Feature Engineering_",
@@ -28,6 +36,56 @@ def app_layout():
                                          "#5 Training_",
                                          "#6 Prediction_",
                                          ])
+    # -- LAYOUT --
+    col1, col2 = st.columns([6,4])
+    with col1:
+        global update_message
+        st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)
+        st.markdown("#### *'Predictive Maintenance with failures detection on industrial robot'* ")
+        colA, colB, colC, colD = st.columns ([1,4,4,3])
+        with colA:
+            github_button('https://github.com/mriusero/projet-sda-machine-learning')
+        with colB:
+            st.text("")
+            st.link_button('Kaggle competition : phase I',
+                           'https://www.kaggle.com/competitions/predictive-maintenance-for-industrial-robots-i')
+        with colC:
+            st.text("")
+            st.link_button('Kaggle competition : phase II',
+                           'https://www.kaggle.com/competitions/predictive-maintenance-of-a-robot-ii')
+        with colD:
+            st.text("")
+            if st.button('Update data'):
+                update_message = load_data()
+                st.sidebar.success(f"{update_message}")
+                print(update_message)
+
+    st.text('')
+    with col2:
+        st.write("")
+        st.write("")
+        st.write("")
+
+        data = DataVisualizer()
+        st.session_state.data = data
+    line_style = """
+        <style>
+        .full-width-line {
+            height: 2px;
+            background-color: #FFFFFF; /* Changez la couleur ici (rouge) */
+            width: 100%;
+            margin: 20px 0;
+        }
+        </style>
+    """
+    line_html = '<div class="full-width-line"></div>'
+
+    # Affichage du style et de la ligne
+    st.markdown(line_style, unsafe_allow_html=True)
+    st.markdown(line_html, unsafe_allow_html=True)
+
+   # st.markdown(f"###### _____________________________________________________________________________________________________________________________________________________")
+
 
     if page == "#0 Introduction_":
         page_0()
@@ -44,10 +102,9 @@ def app_layout():
     elif page == "#6 Prediction_":
         page_6()
 
+    st.sidebar.text(f'\n')
 
-
-
-
+    gc.collect()
 
 
 

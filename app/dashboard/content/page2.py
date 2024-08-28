@@ -5,7 +5,7 @@ from scipy import stats
 import plotly.express as px
 
 from ..functions import detect_outliers, dataframing_data
-from ..components import plot_correlation_matrix, plot_scatter, plot_scatter2, plot_histogram
+
 
 from ..FailuresDetectModel import clean_data
 
@@ -14,14 +14,12 @@ from sklearn.svm import OneClassSVM
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 
-def page_2():
-    st.markdown('<div class="title">MACHINE LEARNING</div>', unsafe_allow_html=True)                            #TITLE
+def page_2():                          #TITLE
     st.markdown('<div class="header">#2 Cleaning_</div>', unsafe_allow_html=True)
-    line = '_'*50
     texte = f"""
 
         Here is the Cleaning phase
-    {line}
+
     """
     st.markdown(texte)
 

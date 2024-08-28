@@ -1,27 +1,78 @@
 # validation.py
 import pandas as pd
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import accuracy_score
 
-def cross_validate(model, X, y, cv=5):
-    scores = cross_val_score(model, X, y, cv=cv)
-    return scores.mean()
+def generate_submission_file(model_name, output_path, step):
 
-def calculate_score(true_labels, predictions, true_rul):
-    score = 0
-    for true_label, pred, rul in zip(true_labels, predictions, true_rul):
-        if true_label == pred:
-            score += 2
-        elif true_label == 1 and pred == 0:
-            score -= 4
-        elif true_label == 0 and pred == 1:
-            score -= (1/60) * rul
-    return score
+    template = pd.read_csv('../app/data/output/submission/template/submission_template.csv')
+    submission_df = template.copy()
+    submission_df['predicted_rul'] = 0
 
-def generate_submission_file(predictions, output_path):
-    template = pd.read_csv('./app/data/output/submission/template/submission_template.csv')
-    predictions['item_index'] = predictions['item_index'].apply(lambda x: f'item_{x}')
-    submission = pd.merge(template, predictions, on='item_index', how='left')
-    #submission['predicted_rul'] = np.where(submission['predicted_crack_length'] > 0.85, 0, 1)
+    if model_name == 'LSTMModel':
 
-    submission.to_csv(output_path, index=False)
+        lstm_results = pd.read_csv(f"{output_path}/lstm_predictions_{step}.csv")
+        lstm_results = lstm_results[['item_index', 'crack_failure',
+                  #                   'Failure mode (lstm)',
+                              #       'crack_failure_filtered', 'crack_failure_filtered',
+                              #       'control_board_failure_filtered'
+                                     ]]
+
+        for item_index, group in lstm_results.groupby('item_index'):
+            if (group['crack_failure'] == 1).any():
+                submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
+
+            #control_board_failure = row['control_board_failure_filtered']
+            #if control_board_failure == 1:
+            #    submission_df.loc[submission_df['item_index'] == item_index, 'label'] = int(1)
+
+        #for index, row in lstm_results.iterrows():
+        #    item_index = row['item_index']
+        #    failure = row['Failure mode (lstm)']
+        #    #if failure == 'Crack failure':
+        #        #submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
+        #    if failure == 'Control board failure':
+        #        submission_df.loc[submission_df['item_index'] == item_index, 'label'] = int(1)
+        #    if failure == 'Infant Mortality':
+        #        submission_df.loc[submission_df['item_index'] == item_index, 'label'] = int(1)
+
+    elif model_name == 'RandomForestClassifierModel':
+
+        rf_results = pd.read_csv(f"{output_path}/rf_predictions_{step}.csv")
+
+        for index, row in rf_results.iterrows():
+            item_index = row['item_index']
+            failure = row['Failure mode (rf)']
+            #if failure == 'Crack failure':
+                #submission_df.loc[submission_df['item_index'] == item_index, 'label'] = 1
+            if failure == 'Control board failure':
+                submission_df.loc[submission_df['item_index'] == item_index, 'label'] = int(1)
+            if failure == 'Infant Mortality':
+                submission_df.loc[submission_df['item_index'] == item_index, 'label'] = int(1)
+
+    else:
+        raise ValueError("'model_name' not defined in 'generate_submission_file()'")
+
+    return submission_df.to_csv(f"{output_path}/submission_{step}.csv", index=False)
+
+def calculate_score(output_path, step):
+
+    solution = pd.read_csv('../app/data/input/training_data/pseudo_testing_data_with_truth/Solution.csv')
+    submission = pd.read_csv(f"{output_path}/submission_{step}.csv")
+
+    reward = 2
+    penalty_false_positive = -1 / 60
+    penalty_false_negative = -4
+
+    # Compare labels and calculate rewards/penalties
+    rewards_penalties = []
+    for _, (sol_label, sub_label, true_rul) in enumerate(
+            zip(solution['label'], submission['label'], solution['true_rul'])):
+        if sol_label == sub_label:
+            rewards_penalties.append(reward)
+        elif sol_label == 1 and sub_label == 0:
+            rewards_penalties.append(penalty_false_negative)
+        elif sol_label == 0 and sub_label == 1:
+            rewards_penalties.append(penalty_false_positive * true_rul)
+        else:
+            rewards_penalties.append(0)  # No reward or penalty if labels don't match
+
+    return sum(rewards_penalties)
