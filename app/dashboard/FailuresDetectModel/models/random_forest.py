@@ -73,7 +73,7 @@ class RandomForestClassifierModel:
         prediction_df.loc[:, 'item_index'] = prediction_df['item_index'].apply(lambda x: f'item_{x}')
         return prediction_df
 
-    def save_predictions(self, predictions, output_path, step):
+    def save_predictions(self, output_path, predictions, step):
 
         file_path = f"{output_path}/rf_predictions_{step}.csv"
         predictions.to_csv(file_path, index=False)

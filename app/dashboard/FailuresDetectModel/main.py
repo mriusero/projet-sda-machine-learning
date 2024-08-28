@@ -14,7 +14,7 @@ def instance_model(model_name):
     return model_classes[model_name]()
 
 @st.cache_resource
-def ml_pipeline(model_name, train_df, pseudo_test_with_truth_df, test_df, output_path):
+def ml_pipeline(train_df, pseudo_test_with_truth_df, test_df):
     """
     Fonction qui exécute les trois phases du pipeline de machine learning pour un modèle donné.
 
@@ -25,50 +25,85 @@ def ml_pipeline(model_name, train_df, pseudo_test_with_truth_df, test_df, output
         test_df (DataFrame):                       Jeu de données de test final pour les prédictions.
         output_path (str):                         Chemin de sortie pour sauvegarder les résultats.
     """
-    model = instance_model(model_name)    # Instancier le modèle
+    st.write("")
+    # --------- Random Forest Classifier Model ------------
+    model_name = 'RandomForestClassifierModel'
+    output_path = 'data/output/submission/random_forest'
+    st.markdown(f"## {model_name}")
+    rf_model = instance_model(model_name)
 
-    # -- TRAINING --
-    if model_name == 'RandomForestClassifierModel' and hasattr(model, 'prepare_data'):
-        X_, y_ = model.prepare_data(train_df)
-    elif model_name == 'LSTMModel' and hasattr(model, 'prepare_train_sequences'):
-        X_, y_ = model.prepare_train_sequences(train_df)
-    else:
-        raise SystemError(f'No appropriated class structuration for {model_name} training')
-    model.train(X_, y_)
-    st.success(f"Model trained successfully!")
+    X_, y_ = rf_model.prepare_data(train_df)
+    rf_model.train(X_, y_)
 
-    # -- CROSS VALIDATION --
-    if model_name == 'RandomForestClassifierModel' and hasattr(model, 'prepare_data'):
-        X_, y_ = model.prepare_data(pseudo_test_with_truth_df)
-        predictions = model.predict(X_)
-        model.save_predictions(predictions, output_path, step='cross-val')
-    elif model_name == 'LSTMModel' and hasattr(model, 'predict_futures_values'):
-        all_predictions = model.predict_futures_values(pseudo_test_with_truth_df)
-        predictions = model.add_predictions_to_data(pseudo_test_with_truth_df, all_predictions)
-        model.save_predictions(predictions, output_path, step='cross-val')
-    else:
-        raise SystemError(f'No appropriated class structuration for {model_name} Cross validation')
+    X_, y_ = rf_model.prepare_data(pseudo_test_with_truth_df)
+    predictions = rf_model.predict(X_)
+    rf_model.save_predictions(output_path, predictions, step='cross-val')
     generate_submission_file(model_name, output_path, step='cross-val')
     score = calculate_score(output_path, step='cross-val')
     st.write(f"Score de cross validation pour {model_name}: {score}")
 
-    # -- PREDICTION --
-    if model_name == 'RandomForestClassifierModel' and hasattr(model, 'prepare_data'):
-        X_test, _ = model.prepare_data(test_df, target_col=None)
-        predictions = model.predict(X_test)
-        model.save_predictions(predictions, output_path, step='final-test')
+    X_test, _ = rf_model.prepare_data(test_df, target_col=None)
+    predictions = rf_model.predict(X_test)
+    rf_model.save_predictions(output_path, predictions, step='final-test')
+    generate_submission_file(model_name, output_path, step='final-test')
+    final_score = calculate_score(output_path, step='final-test')
+    st.write(f"Le score final pour {model_name} est de {final_score}")
+    st.dataframe(predictions)
 
-    elif model_name == 'LSTMModel' and hasattr(model, 'predict_futures_values'):
-        all_predictions = model.predict_futures_values(test_df)
-        predictions = model.add_predictions_to_data(test_df, all_predictions)
-        model.save_predictions(predictions, output_path, step='final-test')
-    else:
-        raise SystemError(f'No appropriated class structuration for {model_name} final testing')
+
+    # --------- LSTM Model ------------
+    model_name = 'LSTMModel'
+    output_path = 'data/output/submission/lstm'
+    st.markdown(f"## {model_name}")
+    lstm_model = instance_model(model_name)
+
+    X_, y_ = lstm_model.prepare_train_sequences(train_df)
+    lstm_model.train(X_, y_)
+
+    all_predictions = lstm_model.predict_futures_values(pseudo_test_with_truth_df)
+    lstm_predictions = lstm_model.add_predictions_to_data(pseudo_test_with_truth_df, all_predictions)
+    lstm_model.save_predictions(output_path, lstm_predictions, step='cross-val')
+    generate_submission_file(model_name, output_path, step='cross-val')
+    score = calculate_score(output_path, step='cross-val')
+    st.write(f"Score de cross validation pour {model_name}: {score}")
+
+    all_predictions = lstm_model.predict_futures_values(test_df)
+    lstm_predictions = lstm_model.add_predictions_to_data(test_df, all_predictions)
+    lstm_model.save_predictions(output_path, lstm_predictions, step='final-test')
     generate_submission_file(model_name, output_path, step='final-test')
     final_score = calculate_score(output_path, step='final-test')
     st.write(f"Le score final pour {model_name} est de {final_score}")
 
-    # model.display_results(predictions)
+    lstm_model.display_results(lstm_predictions)
+
+
+    #--------- Random Forest Classifier Model ------------
+    model_name = 'RandomForestClassifierModel'
+    output_path = 'data/output/submission/random_forest'
+    st.markdown(f"## {model_name}")
+    rf_model2 = instance_model(model_name)
+
+    X_, y_ = rf_model2.prepare_data(train_df)
+    rf_model2.train(X_, y_)
+
+    X_, y_ = rf_model2.prepare_data(pseudo_test_with_truth_df)
+    predictions = rf_model2.predict(X_)
+    rf_model2.save_predictions(output_path, predictions, step='cross-val')
+    generate_submission_file(model_name, output_path, step='cross-val')
+    score = calculate_score(output_path, step='cross-val')
+    st.write(f"Score de cross validation pour {model_name}: {score}")
+
+    X_test, _ = rf_model2.prepare_data(lstm_predictions, target_col=None)
+    predictions = rf_model2.predict(X_test)
+    rf_model2.save_predictions(output_path, predictions, step='final-test')
+    generate_submission_file(model_name, output_path, step='final-test')
+    final_score = calculate_score(output_path, step='final-test')
+    st.write(f"Le score final pour {model_name} est de {final_score}")
+    st.dataframe(predictions)
+
+
+
+
 
 def handle_models():
     """
@@ -78,13 +113,7 @@ def handle_models():
     pseudo_test_with_truth_df = st.session_state.data.df['pseudo_test_with_truth']
     test_df = st.session_state.data.df['test']
 
-    output_paths = {
-        'LSTMModel': 'data/output/submission/lstm',
-        'RandomForestClassifierModel': 'data/output/submission/random_forest'
-    }
     models_to_run = ['RandomForestClassifierModel', 'LSTMModel']  # Models to execute
 
     if st.button('Run predictions'):
-        for model_name in models_to_run:
-            st.markdown(f"## #{model_name} predictions_")
-            ml_pipeline(model_name, train_df, pseudo_test_with_truth_df, test_df, output_paths[model_name])
+        ml_pipeline(train_df, pseudo_test_with_truth_df, test_df)
