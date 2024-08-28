@@ -2,6 +2,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
+from statsmodels.tsa.seasonal import STL
 import seaborn as sns
 import pandas as pd
 from ..FailuresDetectModel import clean_data, FeatureAdder
@@ -152,3 +153,87 @@ class DataVisualizer:
         )
 
         st.plotly_chart(fig, use_container_width=True)
+
+    def plot_pairplot(self, df_key, hue=None, palette='Set2'):
+        """
+        Tracer un pair plot à partir d'un DataFrame Pandas.
+        Paramètres:
+        - data: DataFrame contenant les données.
+        - hue: Nom de la colonne pour colorer les points selon une variable catégorielle.
+        - palette: Palette de couleurs à utiliser pour le graphique.
+        """
+        data = pd.read_csv('./data/output/training/training_data.csv')
+        # Créer le pair plot
+        fig = sns.pairplot(data, hue=hue, palette=palette)
+        # Afficher le graphique
+        st.pyplot(fig)
+
+    def boxplot(self, df_key, x_col, y_col):
+        """
+        Trace un graphique avec plusieurs boxplots de x_col en fonction de y_col.
+
+        Paramètres:
+        - df_key : La clé du DataFrame à utiliser.
+        - x_col : La colonne du DataFrame à utiliser pour l'axe x.
+        - y_col : La colonne du DataFrame à utiliser pour l'axe y.
+        """
+        data = self.df[df_key]
+
+        fig = plt.figure(figsize=(10, 6))  # Définir la taille de la figure
+        sns.boxplot(x=x_col, y=y_col, data=data, palette="Set2")  # Créer le boxplot avec seaborn
+
+        plt.xlabel(x_col)  # Label pour l'axe x
+        plt.ylabel(y_col)  # Label pour l'axe y
+        plt.title(f'Boxplot de {x_col} en fonction de {y_col}')  # Titre du graphique
+
+        st.pyplot(fig)                               # Afficher le graphique
+
+    def decompose_time_series(self, df_key, time_col, value_col, period=12):
+        df = self.df[df_key]
+
+        if time_col not in df.columns or value_col not in df.columns:
+            st.error(f"Les colonnes '{time_col}' ou '{value_col}' n'existent pas dans le DataFrame.")
+            return
+
+        df[time_col] = pd.to_datetime(df[time_col], errors='coerce')
+        df = df.sort_values(by=time_col)
+
+        df = df.dropna(subset=[time_col, value_col])
+
+        df.set_index(time_col, inplace=True)
+
+        # Effectuer la décomposition STL
+        try:
+            stl = STL(df[value_col], period=period)
+            result = stl.fit()
+        except Exception as e:
+            st.error(f"Erreur lors de la décomposition STL: {e}")
+            return
+
+        # Tracer les résultats
+        fig, axes = plt.subplots(4, 1, figsize=(12, 12), sharex=True)
+        fig.suptitle(f'Décomposition de la série temporelle : {value_col}', fontsize=16)
+
+        # Tendance
+        axes[0].plot(result.trend, label='Tendance', color='blue')
+        axes[0].set_title('Tendance')
+        axes[0].legend(loc='upper left')
+
+        # Saison
+        axes[1].plot(result.seasonal, label='Saisonnalité', color='green')
+        axes[1].set_title('Saisonnalité')
+        axes[1].legend(loc='upper left')
+
+        # Résidu
+        axes[2].plot(result.resid, label='Résidu', color='red')
+        axes[2].set_title('Résidu')
+        axes[2].legend(loc='upper left')
+
+        # Série originale
+        axes[3].plot(df[value_col], label='Série Originale', color='gray')
+        axes[3].set_title('Série Originale')
+        axes[3].legend(loc='upper left')
+
+        plt.tight_layout(rect=[0, 0, 1, 0.97])
+
+        st.pyplot(fig)

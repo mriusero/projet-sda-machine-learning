@@ -157,3 +157,69 @@ def combine_submissions_for_scenario(folder_path):
     final_df = combined_df.groupby('item_index').agg({'predicted_rul': 'max'}).reset_index()
     output_file = os.path.join(folder_path, 'Submission.csv')
     final_df.to_csv(output_file, index=False)
+
+
+def display_variable_types(df):
+    """
+    Affiche dans Streamlit les types de variables d'un DataFrame donné.
+
+    Paramètres:
+    df (pd.DataFrame): Le DataFrame à analyser.
+    """
+
+    def identify_variable_type(series):
+        """
+        Identifie le type d'une variable dans une série pandas.
+        """
+        # Vérifier si la série contient des valeurs numériques
+        if pd.api.types.is_numeric_dtype(series):
+            unique_values = series.nunique()
+            total_values = len(series)
+
+            # Critère pour une variable continue
+            if pd.api.types.is_float_dtype(series) or unique_values > 20 and unique_values / total_values > 0.05:
+                return 'continue'
+            # Critère pour une variable discrète
+            elif pd.api.types.is_integer_dtype(series) or unique_values <= 20:
+                return 'discrete'
+        else:
+            # Critère pour une variable catégorielle
+            unique_values = series.nunique()
+            total_values = len(series)
+            if unique_values / total_values < 0.5:  # Ajuster le seuil selon vos besoins
+                return 'categorical'
+
+        # Si aucun des critères n'est satisfait
+        return 'unknown'
+
+    # Identification des types de variables pour chaque colonne du DataFrame
+    results = {'Variable': [], 'Type': []}
+
+    for col in df.columns:
+        var_type = identify_variable_type(df[col])
+        results['Variable'].append(col)
+        results['Type'].append(var_type)
+
+    # Convertir les résultats en DataFrame pour un affichage propre
+    return pd.DataFrame(results)
+
+
+def compare_dataframes(df1, df2):
+    """
+    Compare deux DataFrames et affiche les différences de colonnes et de valeurs.
+    """
+    # Comparaison des colonnes
+    cols_diff = set(df1.columns).symmetric_difference(set(df2.columns))
+    if cols_diff:
+        print("Colonnes différentes :")
+        print(cols_diff)
+    else:
+        print("Les deux DataFrames ont les mêmes colonnes.")
+
+    # Comparaison des valeurs
+    diff = df1.compare(df2, keep_shape=True, keep_equal=True)
+    if diff.empty:
+        print("Les deux DataFrames sont identiques au niveau des valeurs.")
+    else:
+        print("Différences de valeurs :")
+        print(diff)

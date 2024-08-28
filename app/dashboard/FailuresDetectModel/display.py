@@ -10,6 +10,15 @@ class DisplayData:
     def __init__(self, data):
         self.data = data
 
+    def plot_discrete_scatter(self, df, x_col, y_col, color_col):
+
+        if x_col and y_col and color_col:
+            fig = px.scatter(df, x=x_col, y=y_col, color=color_col,
+                             title=f'Nuage de points pour {x_col} vs {y_col}')
+            st.plotly_chart(fig)
+
+
+
     def plot_correlation_matrix(self):
         numeric_df = self.data.select_dtypes(include=[float, int])
         corr = numeric_df.corr()
