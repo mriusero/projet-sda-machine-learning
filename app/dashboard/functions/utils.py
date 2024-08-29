@@ -73,21 +73,23 @@ def load_data():
 def merge_data(training_data):
 
     df1 = pd.merge(training_data['degradation_data'], training_data['failure_data'], on='item_id', how='left')
-    df1.rename(columns={'item_id': 'item_index'}, inplace=True)
-    df1['item_index'] = df1['item_index'].apply(lambda x: f'item_{x}')
+    #df1.rename(columns={'item_id': 'item_index'}, inplace=True)
+    #df1['item_index'] = df1['item_index'].apply(lambda x: f'item_{x}')
 
     df2 = training_data['pseudo_testing_data'].copy()
-    df2.rename(columns={'item_id': 'item_index'}, inplace=True)
-    df2['item_index'] = df2['item_index'].apply(lambda x: f'item_{x}')
+    #df2.rename(columns={'item_id': 'item_index'}, inplace=True)
+    #df2['item_index'] = df2['item_index'].apply(lambda x: f'item_{x}')
 
     df3 = training_data['pseudo_testing_data_with_truth'].copy()
-    df3.rename(columns={'item_id': 'item_index'}, inplace=True)
-    df3['item_index'] = df3['item_index'].apply(lambda x: f'item_{x}')
-    df3 = pd.merge(df3, training_data['solution_data'], on='item_index', how='left')
+    #df3.rename(columns={'item_id': 'item_index'}, inplace=True)
+    #df3['item_index'] = df3['item_index'].apply(lambda x: f'item_{x}')
+    training_data['solution_data']['item_id'] = training_data['solution_data']['item_id'].str.extract(r'(\d+)').astype(int)
+    #training_data['solution_data']['item_id'] = training_data['solution_data']['item_id'].astype(str)
+    df3 = pd.merge(df3, training_data['solution_data'], on='item_id', how='left')
 
     df4 = training_data['testing_data'].copy()
-    df4.rename(columns={'item_id': 'item_index'}, inplace=True)
-    df4['item_index'] = df2['item_index'].apply(lambda x: f'{x}')
+    #df4.rename(columns={'item_id': 'item_index'}, inplace=True)
+    #df4['item_index'] = df2['item_index'].apply(lambda x: f'{x}')
 
     df1.to_csv('./data/output/training/training_data.csv', index=False)
     df2.to_csv('./data/output/pseudo_testing/pseudo_testing_data.csv', index=False)
@@ -121,9 +123,9 @@ def dataframing_data():
 def load_failures():
 
     df = pd.read_csv('./data/output/training/training_data.csv')
-    if 'item_index' not in df.columns or 'Failure mode' not in df.columns:
-        raise ValueError("Les colonnes 'item_index' ou 'Failure mode' sont manquantes dans le DataFrame.")
-    df = df.groupby('item_index')['Failure mode'].first().reset_index()
+    if 'item_id' not in df.columns or 'Failure mode' not in df.columns:
+        raise ValueError("Les colonnes 'item_id' ou 'Failure mode' sont manquantes dans le DataFrame.")
+    df = df.groupby('item_id')['Failure mode'].first().reset_index()
     failures_df = df.rename(columns={'Failure mode': 'Failure mode'})
     return failures_df
 

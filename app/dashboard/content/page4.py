@@ -56,11 +56,28 @@ def page_4():
 
     with col1:
         st.dataframe(train_df)
+
         st.markdown('### #Variables types_')
         variable_types_df = display_variable_types(train_df)
         st.dataframe(variable_types_df)
+
+        st.markdown('### #Statistics_')
+        stats_df = train_df.describe()
+        st.dataframe(stats_df)
+
+        grouped_stats_df = train_df.groupby('Failure mode').describe()
+        st.dataframe(grouped_stats_df)
+
+        st.markdown('#### *item_id*')
+        run_statistical_test(train_df, 'anova', 'item_id')
+        st.markdown('#### *Failure mode*')
+        run_statistical_test(train_df, 'anova', 'Failure mode')
+
+
     with col2:
-        st.session_state.data.plot_pairplot('train', hue='Failure mode')
+        st.session_state.data.plot_pairplot(data=pd.read_csv('./data/output/training/training_data.csv'),
+                                            hue='Failure mode',
+                                            palette='hls')
         df = pd.read_csv('./data/output/training/training_data.csv')
         run_statistical_test(df, 'normality', 'time (months)')
         run_statistical_test(df, 'normality', 'crack length (arbitary unit)')
@@ -76,3 +93,5 @@ def page_4():
     with col2 :
         st.markdown("### #Length Filtered")
         st.session_state.data.decompose_time_series('train', 'time (months)', 'length_filtered')
+
+    st.session_state.data.plot_correlation_matrix(df_key='train')

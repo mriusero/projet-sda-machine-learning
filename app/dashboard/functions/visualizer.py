@@ -31,46 +31,131 @@ class DataVisualizer:
         return self.df[df_key]
 
     def get_color_palette(self):
+        """
+        Renvoie un dictionnaire de palettes de couleurs adaptées aux types de données.
+        - 'qualitative': pour les données catégorielles, utilise des palettes de couleurs distinctes adaptées au daltonisme.
+        - 'continuous': pour les données continues, utilise des palettes continues adaptées au daltonisme.
+        - 'cyclical': pour les données périodiques, utilise des palettes cycliques.
+        - 'sequential': pour les données ordonnées ou hiérarchiques, utilise des palettes séquentielles adaptées au daltonisme.
+        """
         return {
-            'blue': '#1f77b4',
-            'orange': '#ff7f0e',
-            'green': '#2ca02c',
-            'red': '#d62728',
-            'purple': '#9467bd',
-            'cyclical': px.colors.cyclical.IceFire,
-            'pastel': px.colors.qualitative.Bold
+            'qualitative': {  #(catégorielles)
+                'D3': px.colors.qualitative.D3,     # color blindness ok
+                'T10': px.colors.qualitative.T10,   # color blindness ok
+                'Safe': px.colors.qualitative.Safe  # color blindness ok
+
+            },
+            'continuous': {  #(continues)
+                'Viridis': px.colors.sequential.Viridis,  # color blindness ok
+                'Cividis': px.colors.sequential.Cividis,  # color blindness ok
+                'Inferno': px.colors.sequential.Inferno,  # color blindness ok
+                'Magma': px.colors.sequential.Magma,      # color blindness ok
+                'Plasma': px.colors.sequential.Plasma,    # color blindness ok
+                'Turbo': px.colors.sequential.Turbo       # color blindness ok
+            },
+            'cyclical': {  #(périodiques)
+                'IceFire': px.colors.cyclical.IceFire,  # color blindness (best option)
+            },
+            'sequential': { #(séquentielles)
+                'Viridis': px.colors.sequential.Viridis,  # color blindness ok
+                'Cividis': px.colors.sequential.Cividis,  # color blindness ok
+                'Inferno': px.colors.sequential.Inferno,  # color blindness ok
+                'Magma': px.colors.sequential.Magma,      # color blindness ok
+                'Plasma': px.colors.sequential.Plasma,    # color blindness ok
+                'Blues': px.colors.sequential.Blues,      # color blindness ok
+                'Greys': px.colors.sequential.Greys       # color blindness ok
+            }
         }
 
-    ## --- Scatter ---
-    def plot_scatter_with_color(self, df_key, x_col, y_col, color_col):
+    ## --- 1) SCATTER ---
+    def plot_scatter_with_color(self, df_key, x_col, y_col, color_col, palette_type, palette_name):
+        """
+        Tracer un graphique de dispersion avec des couleurs personnalisées.
+        Paramètres :
+        - df_key : clé du DataFrame.
+        - x_col, y_col : colonnes pour les axes x et y.
+        - color_col : colonne utilisée pour colorer les points.
+        - palette_type : 'continuous' pour une palette continue ou 'categorical' pour une palette discrète.
+        - palette_name : nom de la palette à utiliser.
+        """
         df = self.df[df_key]
         color_palette = self.get_color_palette()
+
         if x_col and y_col and color_col:
-            fig = px.scatter(df, x=x_col, y=y_col, color=color_col,
-                             title=f'Nuage de points pour {x_col} vs {y_col}',
-                             color_continuous_scale=color_palette['cyclical'])
+
+            if palette_type == 'continuous':
+                color_scale = color_palette['continuous'].get(palette_name, px.colors.cyclical.mrybm_r)
+                color_discrete_map = None  # Pas de couleurs discrètes pour une palette continue
+            else:
+                color_scale = None  # Pas de couleur continue pour une palette discrète
+                color_discrete_map = {
+                    val: color_palette['qualitative'][palette_name][i % len(color_palette['qualitative'][palette_name])]
+                    for i, val in enumerate(df[color_col].unique())
+                }
+            fig = px.scatter(
+                df, x=x_col, y=y_col, color=color_col,
+                title=f'Nuage de points pour {x_col} vs {y_col}',
+                color_continuous_scale=color_scale,
+                color_discrete_map=color_discrete_map
+            )
             st.plotly_chart(fig)
 
-    def plot_multiple_scatter(self, df_key, x_col, y_col, color_col):
+    ## --- 2) HISTOGRAM ---
+    def plot_histogram_with_color(self, df_key, x_col, y_col, color_col, palette_type, palette_name):
         df = self.df[df_key]
         color_palette = self.get_color_palette()
 
-        if x_col and y_col and color_col:
-            fig = px.scatter(df, x=x_col, y=y_col, color=color_col,
-                             title=f'Nuage de points pour {x_col} vs {y_col}',
-                             color_discrete_map={0: color_palette['pastel'][0], 1: color_palette['pastel'][1]})
-            st.plotly_chart(fig)
+        if palette_type not in color_palette:
+            raise ValueError(f"Type de palette invalide. Choisissez parmi {list(color_palette.keys())}.")
 
-    def scatter_plot(self, df_key, x_column, y_column, color=None):
-        color = color or self.get_color_palette()['blue']
-        df = self.df[df_key]
-        plt.figure(figsize=(10, 6))
-        sns.scatterplot(data=df, x=x_column, y=y_column, color=color)
-        plt.title(f'Scatter Plot of {x_column} vs {y_column}')
-        plt.xlabel(x_column)
-        plt.ylabel(y_column)
-        st.pyplot(plt.gcf())
-        plt.close()
+        if palette_name not in color_palette[palette_type]:
+            raise ValueError(
+                f"Palette '{palette_name}' non trouvée pour le type '{palette_type}'. Choisissez parmi {list(color_palette[palette_type].keys())}.")
+
+        palette = color_palette[palette_type][palette_name]
+        color_map = None
+
+        if palette_type == 'qualitative':
+            # Pour les palettes qualitatives, `color_discrete_map` doit être un dictionnaire mappant les valeurs aux couleurs
+            color_map = {val: palette[i % len(palette)] for i, val in enumerate(df[color_col].unique())}
+
+        fig = px.histogram(
+            df, x=x_col, y=y_col, color=color_col,
+            color_discrete_map=color_map,
+            marginal="box",
+            hover_data=df.columns
+        )
+        st.plotly_chart(fig)
+
+    ## --- 3) PAIRPLOT ---
+    def plot_pairplot(self, data, hue=None, palette='Set2'):
+        """
+        Tracer un pair plot à partir d'un DataFrame Pandas.
+        Paramètres:
+        - data: DataFrame contenant les données.
+        - hue: Nom de la colonne pour colorer les points selon une variable catégorielle.
+        - palette: Palette de couleurs à utiliser pour le graphique.
+        """
+        sns.set_theme(style='darkgrid', rc={
+            'axes.facecolor': '#313234',    # Couleur de fond des axes
+            'figure.facecolor': '#313234',  # Couleur de fond de la figure
+            'axes.labelcolor': 'white',     # Couleur des labels des axes
+            'xtick.color': 'white',         # Couleur des ticks de l'axe x
+            'ytick.color': 'white',         # Couleur des ticks de l'axe y
+            'grid.color': '#444444',        # Couleur de la grille
+            'text.color': 'white'           # Couleur du texte
+        })
+
+        # 'Set1', 'Set2', 'Set3', 'Paired', 'Dark2', 'Pastel1', 'Pastel2', 'Accent', 'husl', 'hls' --> Qualitative
+
+        fig = sns.pairplot(data, hue=hue, palette=palette)
+        st.pyplot(fig)
+
+
+
+
+
+
 
     ## --- Histogram ---
     def plot_distribution_histogram(self, df_key, column_name, color='blue'):
@@ -93,28 +178,9 @@ class DataVisualizer:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    def plot_multiple_histogram(self, df_key, x_col, y_col, color_col):
-        df = self.df[df_key]
-        color_palette = self.get_color_palette()
 
-        fig = px.histogram(df, x=x_col, y=y_col, color=color_col, marginal="box",
-                           hover_data=df.columns)
-        st.plotly_chart(fig)
 
-        fig = px.histogram(df, x=x_col, nbins=30,
-                           color=color_col,
-                           labels={'crack length (arbitary unit)': 'Crack length (arbitary unit)'},
-                           title='Histogramme de la longueur de fissure (unité arbitraire) par mode de défaillance')
 
-        fig.update_traces(opacity=0.7)
-        fig.update_layout(
-            xaxis_title='Crack length (arbitary unit)',
-            yaxis_title='Frequency',
-            title_text='Histogramme pour détecter les anomalies',
-            title_x=0.5,
-            barmode='stack'
-        )
-        st.plotly_chart(fig)
 
     ## --- Specific ---
     def plot_correlation_matrix(self, df_key):
@@ -154,19 +220,43 @@ class DataVisualizer:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    def plot_pairplot(self, df_key, hue=None, palette='Set2'):
-        """
-        Tracer un pair plot à partir d'un DataFrame Pandas.
-        Paramètres:
-        - data: DataFrame contenant les données.
-        - hue: Nom de la colonne pour colorer les points selon une variable catégorielle.
-        - palette: Palette de couleurs à utiliser pour le graphique.
-        """
-        data = pd.read_csv('./data/output/training/training_data.csv')
-        # Créer le pair plot
-        fig = sns.pairplot(data, hue=hue, palette=palette)
-        # Afficher le graphique
-        st.pyplot(fig)
+
+    def plot_correlation_with_target(self, df_key, target_variable='Time to failure (months)'):
+        df = self.df[df_key]
+
+        numeric_df = df.select_dtypes(include=[float, int])
+
+        if target_variable not in numeric_df.columns:
+            st.error(f"La variable cible '{target_variable}' n'est pas présente dans le DataFrame.")
+            return
+
+        correlations = numeric_df.corr()[target_variable].dropna().sort_values(ascending=False)
+
+        correlations = correlations[correlations.index != target_variable]
+
+        col1, col2 = st.columns([1,3])
+        with col1:
+            st.write(f"### Corrélations avec '{target_variable}'")
+            st.dataframe(correlations)
+        with col2:
+            fig = go.Figure(data=go.Bar(
+                x=correlations.index,
+                y=correlations.values,
+                marker_color='orange'
+            ))
+
+            fig.update_layout(
+                title=f'Coefficients de corrélation avec {target_variable}',
+                xaxis_title='Variables',
+                yaxis_title='Coefficient de Corrélation',
+                plot_bgcolor='#313234',
+                paper_bgcolor='#313234',
+                font=dict(color='white')
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
+
 
     def boxplot(self, df_key, x_col, y_col):
         """

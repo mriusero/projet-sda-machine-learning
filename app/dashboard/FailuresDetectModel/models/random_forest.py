@@ -28,7 +28,7 @@ class RandomForestClassifierModel:
     def prepare_data(self, df, target_col='Failure mode'):
         """Prepare data for training and prediction."""
         # Aggregate features by item_index
-        aggregated_df = df.groupby('item_index').agg({
+        aggregated_df = df.groupby('item_id').agg({
             'time (months)': 'mean',
             'length_filtered': ['mean', 'std', 'max', 'min'],
             'length_measured': ['mean', 'std', 'max', 'min'],
@@ -39,13 +39,13 @@ class RandomForestClassifierModel:
         # Flatten the column MultiIndex
         aggregated_df.columns = ['_'.join(col).strip() if col[1] else col[0] for col in aggregated_df.columns.values]
 
-        X = aggregated_df.drop(columns=['item_index'])
+        X = aggregated_df.drop(columns=['item_id'])
 
         failures_df = load_failures()
         self.fit_failure_mode_encoder(failures_df)
 
         if target_col in df.columns:
-            y = df.groupby('item_index')[target_col].first().fillna('UNKNOWN')  # Aggregate targets
+            y = df.groupby('item_id')[target_col].first().fillna('UNKNOWN')  # Aggregate targets
             y_encoded = self.encode_failure_mode(y)
             return X, y_encoded
         else:
@@ -66,11 +66,11 @@ class RandomForestClassifierModel:
         predictions_decoded = self.decode_failure_mode(predictions)
 
         prediction_df = pd.DataFrame({
-            'item_index': X_test.index,
+            'item_id': X_test.index,
             'Failure mode (rf)': predictions_decoded
         })
-        prediction_df.loc[:, 'item_index'] = prediction_df['item_index'].astype(str)
-        prediction_df.loc[:, 'item_index'] = prediction_df['item_index'].apply(lambda x: f'item_{x}')
+        prediction_df.loc[:, 'item_id'] = prediction_df['item_id'].astype(str)
+        prediction_df.loc[:, 'item_id'] = prediction_df['item_id'].apply(lambda x: f'item_{x}')
         return prediction_df
 
     def save_predictions(self, output_path, predictions, step):

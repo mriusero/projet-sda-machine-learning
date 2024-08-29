@@ -1,8 +1,8 @@
 import pandas as pd
 import streamlit as st
-from scipy.stats import shapiro, ttest_ind, mannwhitneyu, f_oneway, chi2_contingency, pearsonr, wilcoxon
-
-
+from scipy.stats import shapiro, ttest_ind, mannwhitneyu, f_oneway, chi2_contingency, pearsonr, wilcoxon, friedmanchisquare
+from statsmodels.stats.anova import AnovaRM
+from statsmodels.regression.mixed_linear_model import MixedLM
 class StatisticalTests:
     def __init__(self, df):
         self.df = df
@@ -35,13 +35,45 @@ class StatisticalTests:
         alpha = 0.05
         return p_value > alpha, p_value
 
-    def test_anova(self, *args):
+    def test_anova(self, col):
         """
         Test ANOVA (Analyse de la Variance) pour comparer les moyennes de plusieurs échantillons
+        en fonction de la colonne spécifiée (par exemple, 'Failure mode').
         """
-        groups = [self.df[arg] for arg in args]
+        # Vérifier que la colonne existe dans le DataFrame
+        if col not in self.df.columns:
+            raise ValueError(f"La colonne {col} n'existe pas dans le DataFrame.")
+
+        # Vérifier que la colonne est bien catégorique
+        if not pd.api.types.is_categorical_dtype(self.df[col]) and not pd.api.types.is_object_dtype(self.df[col]):
+            if pd.api.types.is_integer_dtype(self.df[col]):
+                self.df[col] = self.df[col].astype('category')
+            else:
+                raise ValueError(
+                    f"La colonne {col} doit être de type catégorique ou une colonne d'entiers pour la conversion.")
+
+        # Filtrer le DataFrame pour ne conserver que les colonnes numériques
+        numeric_cols = self.df.select_dtypes(include=['number']).columns
+
+        # Assurer que la colonne à tester est numérique
+        if not numeric_cols.size:
+            raise ValueError("Aucune colonne numérique n'est disponible pour le test ANOVA.")
+
+        # Créer une liste de séries pour chaque groupe en utilisant les colonnes numériques
+        groups = [self.df[self.df[col] == category][numeric_cols[0]] for category in self.df[col].unique()]
+
+        # Assurer que chaque groupe a au moins deux valeurs pour le test ANOVA
+        if any(len(group) < 2 for group in groups):
+            raise ValueError(
+                "Un ou plusieurs groupes ont moins de deux valeurs, ce qui est insuffisant pour le test ANOVA.")
+
+        # Effectuer le test ANOVA
         stat, p_value = f_oneway(*groups)
+
+        # Seuil de significativité
         alpha = 0.05
+
+        # Retourner le résultat
         return p_value > alpha, p_value
 
     def test_chi2(self, col1, col2):
@@ -72,6 +104,29 @@ class StatisticalTests:
         alpha = 0.05
         return p_value > alpha, p_value
 
+    def test_friedman(self, subject_col='item_index', within_col='time (months)', dv_col='length_measured'):
+        """
+        Test de Friedman pour comparer les distributions de 'Crack_Length' sur différents points de mesure ('Time') pour chaque sujet ('Machine').
+
+        Arguments:
+        - subject_col: Colonne identifiant les sujets (par ex. les machines).
+        - within_col: Colonne représentant la variable intra-sujet (par ex. le temps).
+        - dv_col: Colonne de la variable dépendante (par ex. la longueur de fissure).
+        """
+        # Vérifier que les colonnes existent dans le DataFrame
+        for col in [subject_col, within_col, dv_col]:
+            if col not in self.df.columns:
+                raise ValueError(f"La colonne {col} n'existe pas dans le DataFrame.")
+
+        # Réorganiser les données pour le test de Friedman
+        data_pivot = self.df.pivot(index=subject_col, columns=within_col, values=dv_col)
+
+        # Effectuer le test de Friedman
+        stat, p_value = friedmanchisquare(*[data_pivot[col].dropna() for col in data_pivot.columns])
+
+        return stat, p_value
+
+
 def run_statistical_test(df, test_type, *args):
     tester = StatisticalTests(df)
 
@@ -88,8 +143,12 @@ def run_statistical_test(df, test_type, *args):
         return st.write(f"Mann-Whitney Test between {args[0]} and {args[1]} - p-value: {p_value}, Result: {'Not Significant' if result else 'Significant'}")
 
     elif test_type == 'anova':              # Test ANOVA (Analyse de la Variance) pour comparer les moyennes de trois échantillons ou plus.
-        result, p_value = tester.test_anova(*args)
+        result, p_value = tester.test_anova(args[0])
         return st.write(f"ANOVA Test - p-value: {p_value}, Result: {'Not Significant' if result else 'Significant'}")
+
+    elif test_type == 'friedman':
+        stat, p_value = tester.test_friedman(*args)
+        return st.write(f"Friedman Test - p-value: {p_value}, Statistic: {stat}")
 
     elif test_type == 'chi2':               # Test du Chi-carré pour tester l'indépendance entre deux variables catégorielles.
         result, p_value = tester.test_chi2(args[0], args[1])

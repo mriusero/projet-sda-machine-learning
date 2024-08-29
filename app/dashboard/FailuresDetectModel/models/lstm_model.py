@@ -98,13 +98,13 @@ class LSTMModel(ModelBase):
         return {'lengths_filtered_output': predictions_filtered, 'lengths_measured_output': predictions_measured}
 
     def prepare_train_sequences(self, df):
-        item_indices = df['item_index'].unique()
+        item_indices = df['item_id'].unique()
         sequences = []
         targets_filtered = []
         targets_measured = []
 
         for item_index in item_indices:
-            item_data = df[df['item_index'] == item_index].sort_values(by='time (months)')
+            item_data = df[df['item_id'] == item_index].sort_values(by='time (months)')
 
             times = item_data['time (months)'].values
             lengths_filtered = item_data['length_filtered'].values
@@ -118,7 +118,7 @@ class LSTMModel(ModelBase):
             rolling_maxs_measured = item_data['rolling_max_length_measured'].values
             rolling_mins_measured = item_data['rolling_min_length_measured'].values
 
-            print(f"item_index: {item_index}, Length of data: {len(times)}")
+            print(f"item_id: {item_index}, Length of data: {len(times)}")
 
             sequence_length = self.min_sequence_length
 
@@ -191,7 +191,7 @@ class LSTMModel(ModelBase):
             ))
             return pad_sequences([last_sequence], maxlen=self.min_sequence_length, padding='post', dtype='float32')
 
-        item_indices = df['item_index'].unique()
+        item_indices = df['item_id'].unique()
         all_predictions = []
 
         with st.spinner('Calculating future values...'):
@@ -200,7 +200,7 @@ class LSTMModel(ModelBase):
             num_items = len(item_indices)
 
             for idx, item_index in enumerate(item_indices):
-                item_data = df[df['item_index'] == item_index].sort_values(by='time (months)')
+                item_data = df[df['item_id'] == item_index].sort_values(by='time (months)')
                 features = extract_features(item_data)
                 last_sequence_padded = prepare_test_sequence(features)
                 # Assurez-vous que `self.model.predict` retourne bien les deux sorties
@@ -239,7 +239,7 @@ class LSTMModel(ModelBase):
             }
 
             data_dict = {
-                'item_index': item_index,
+                'item_id': item_index,
                 'time (months)': times,
                 'length_filtered': lengths_filtered,
                 'length_measured': lengths_measured,
@@ -254,11 +254,11 @@ class LSTMModel(ModelBase):
             #    })
             return pd.DataFrame(data_dict)
 
-        item_indices = df['item_index'].unique()
+        item_indices = df['item_id'].unique()
         extended_data = []
 
         for idx, item_index in enumerate(item_indices):
-            item_data = df[df['item_index'] == item_index].sort_values(by='time (months)')
+            item_data = df[df['item_id'] == item_index].sort_values(by='time (months)')
             max_time = np.max(item_data['time (months)'].values)
             forecast_length = len(predictions[idx])
             future_times = np.arange(np.ceil(max_time + 1), np.ceil(max_time + 1) + forecast_length)
@@ -268,7 +268,7 @@ class LSTMModel(ModelBase):
 
             initial_data = prepare_initial_data(item_data, item_index, source=0)
             forecast_data = pd.DataFrame({
-                'item_index': item_index,
+                'item_id': item_index,
                 'time (months)': future_times,
                 'length_filtered': future_lengths_filtered,
                 'length_measured': future_lengths_measured,
@@ -286,8 +286,8 @@ class LSTMModel(ModelBase):
         feature_adder = FeatureAdder(min_sequence_length=self.min_sequence_length)
         df_extended = feature_adder.add_features(df_extended, particles_filtery=False)
 
-        df_extended['item_index'] = df_extended['item_index'].astype(str)
-        df_extended.loc[:, 'item_index'] = df_extended['item_index'].apply(lambda x: f'item_{x}')
+        #df_extended['item_id'] = df_extended['item_index'].astype(str)
+        #df_extended.loc[:, 'item_index'] = df_extended['item_index'].apply(lambda x: f'item_{x}')
 
         return df_extended
 
@@ -304,11 +304,11 @@ class LSTMModel(ModelBase):
         col1, col2 = st.columns(2)
         with col1:
             display.plot_discrete_scatter(df, 'time (months)', 'length_measured', 'source')
-            display.plot_discrete_scatter(df, 'time (months)', 'length_measured', 'item_index')
+            display.plot_discrete_scatter(df, 'time (months)', 'length_measured', 'item_id')
             display.plot_discrete_scatter(df, 'time (months)', 'length_measured', 'crack_failure')
         with col2:
             display.plot_discrete_scatter(df, 'time (months)', 'length_filtered', 'source')
-            display.plot_discrete_scatter(df, 'time (months)', 'length_filtered', 'item_index')
+            display.plot_discrete_scatter(df, 'time (months)', 'length_filtered', 'item_id')
             display.plot_discrete_scatter(df, 'time (months)', 'length_filtered', 'crack_failure')
 
         # Remove the line that plots based on Failure mode as it's not used in V4

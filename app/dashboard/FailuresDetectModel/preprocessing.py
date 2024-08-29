@@ -34,11 +34,11 @@ def clean_data(df):
         return group
 
     df = df.rename(columns={'crack length (arbitary unit)': 'length_measured'})
-    df = df.sort_values(by=['item_index', 'time (months)'])
+    df = df.sort_values(by=['item_id', 'time (months)'])
     df['source'] = 0                                            # Original data tag
 
     df['crack_failure'] = (df['length_measured'] >= 0.85).astype(int)
-    df = df.groupby('item_index').apply(complete_empty_item_data)
+    df = df.groupby('item_id').apply(complete_empty_item_data)
 
     #df['rul (months)'] = df.groupby('item_index').cumcount().add(1)
 
