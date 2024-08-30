@@ -6,6 +6,7 @@ from .models_base import ModelBase
 from ...functions import load_failures
 from ..features import FeatureAdder
 from ..display import DisplayData
+from ..validation import generate_submission_file, calculate_score
 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Model
@@ -313,3 +314,46 @@ class LSTMModel(ModelBase):
 
         # Remove the line that plots based on Failure mode as it's not used in V4
         # plot_scatter2(df, 'time (months)', 'length_measured', 'Failure mode (lstm)')
+
+    def run_full_pipeline(self, train_df, pseudo_test_with_truth_df, test_df):
+        """
+        Méthode pour exécuter le pipeline complet: entraînement, prédictions, et génération des fichiers de soumission.
+
+        Args:
+            train_df (DataFrame): Les données d'entraînement.
+            pseudo_test_with_truth_df (DataFrame): Données de test avec vérités terrain pour la validation croisée.
+            test_df (DataFrame): Les données de test finales.
+            output_path (str): Le chemin de sauvegarde des résultats.
+            model_name (str): Le nom du modèle.
+        """
+        model_name = 'LSTMModel'
+        st.markdown(f"## {model_name}")
+        output_path = 'data/output/submission/lstm'
+        # Préparation des séquences de formation
+        X_, y_ = self.prepare_train_sequences(train_df)
+
+        # Entraînement du modèle
+        self.train(X_, y_)
+
+        # Validation croisée sur pseudo_test_with_truth_df
+        all_predictions = self.predict_futures_values(pseudo_test_with_truth_df)
+        lstm_predictions = self.add_predictions_to_data(pseudo_test_with_truth_df, all_predictions)
+        self.save_predictions(output_path, lstm_predictions, step='cross-val')
+
+        # Génération du fichier de soumission et calcul du score pour la validation croisée
+        generate_submission_file(model_name, output_path, step='cross-val')
+        score = calculate_score(output_path, step='cross-val')
+        st.write(f"Score de cross validation pour {model_name}: {score}")
+
+        # Prédictions finales sur test_df
+        all_predictions = self.predict_futures_values(test_df)
+        lstm_predictions = self.add_predictions_to_data(test_df, all_predictions)
+        self.save_predictions(output_path, lstm_predictions, step='final-test')
+
+        # Génération du fichier de soumission et calcul du score final
+        generate_submission_file(model_name, output_path, step='final-test')
+        final_score = calculate_score(output_path, step='final-test')
+        st.write(f"Le score final pour {model_name} est de {final_score}")
+
+        # Affichage des résultats
+        self.display_results(lstm_predictions)

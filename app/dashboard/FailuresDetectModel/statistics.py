@@ -1,11 +1,30 @@
 import pandas as pd
+import numpy as np
 import streamlit as st
 from scipy.stats import shapiro, ttest_ind, mannwhitneyu, f_oneway, chi2_contingency, pearsonr, wilcoxon, friedmanchisquare
 from statsmodels.stats.anova import AnovaRM
 from statsmodels.regression.mixed_linear_model import MixedLM
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 class StatisticalTests:
     def __init__(self, df):
         self.df = df
+
+    def test_multicollinearity(self):
+        """
+        Test de multicolinéarité utilisant le Variance Inflation Factor (VIF)
+        pour toutes les variables numériques du DataFrame.
+        """
+        # Sélectionner uniquement les colonnes numériques
+        numeric_df = self.df.select_dtypes(include=[np.number])
+        numeric_df = numeric_df.replace([np.inf, -np.inf], np.nan).dropna()
+        # Calculer le VIF pour chaque variable numérique
+        vif_data = pd.DataFrame()
+        vif_data["Variable"] = numeric_df.columns
+        vif_data["VIF"] = [variance_inflation_factor(numeric_df.values, i) for i in range(numeric_df.shape[1])]
+
+        # Afficher le résultat avec Streamlit
+        st.write("Variance Inflation Factor (VIF):")
+        return vif_data
 
     def test_normality(self, column_name):
         """
@@ -162,5 +181,8 @@ def run_statistical_test(df, test_type, *args):
         result, p_value = tester.test_wilcoxon(args[0], args[1])
         return st.write(f"Wilcoxon Test - p-value: {p_value}, Result: {'Not Significant' if result else 'Significant'}")
 
+    elif test_type == 'multicollinearity':  # Test de multicolinéarité (VIF)
+        vif_data = tester.test_multicollinearity()
+        return st.dataframe(vif_data)
     else:
         return st.write("Unknown test type")

@@ -13,22 +13,16 @@ def clean_data(df):
         # Vérifier et remplir 'Failure mode' et 'Time to failure (months)' si nécessaire
         if 'Failure mode' in group.columns:
             if group['Failure mode'].isnull().all() and group['Time to failure (months)'].isnull().all():
-                group['Failure mode'] = 'Fatigue crack'
+                group['Failure mode'] = 'UNKNOWN'
                 group['Time to failure (months)'] = group['time (months)'].max()
 
         # Initialiser les colonnes 'end_life' et 'has_zero_twice' pour tous les groupes
         if 'rul (months)' in group.columns:
             max_time = group['time (months)'].max()
-
             group['rul (months)'] = max_time - group['time (months)'] + 1
-
-            # Traiter les valeurs dans 'rul (months)'
-            group['end_life'] = (group['rul (months)'] <= 6).astype(int)
             count_zeros = (group['rul (months)'] == 0).sum()
             group['has_zero_twice'] = count_zeros >= 2
         else:
-            # Définir des valeurs par défaut si 'rul (months)' est absent
-            group['end_life'] = 0
             group['has_zero_twice'] = False
 
         return group

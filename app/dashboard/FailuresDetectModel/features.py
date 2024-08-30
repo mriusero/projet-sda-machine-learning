@@ -57,7 +57,7 @@ class FeatureAdder:
             existing_columns = [col for col in to_recall if col in df.columns]
             df = df.drop(columns=existing_columns)
 
-        def add_shifts_and_ratios(df, columns, max_shift=3):
+        def add_shifts_and_ratios(df, columns, max_shift=6):
             for col in columns:
                 # Ajouter des colonnes décalées
                 for shift in range(1, max_shift + 1):
@@ -69,7 +69,7 @@ class FeatureAdder:
                             df[f'{col}_shift_{shift}'] / (df[f'{col}_shift_{shift + 1}'] + 1e-9)
                     # Ajout d'une petite valeur pour éviter la division par zéro
                     )
-
+            df.fillna(0, inplace=True)
             return df
 
         def decompose_time_series(df, time_col, value_col, period=12):
@@ -141,7 +141,5 @@ class FeatureAdder:
         if 'rul (months)' in df.columns:
             df['label'] = (df['rul (months)'] <= 6).astype(int)
             df = df.sort_values(by=["item_id", "time (months)"], ascending=[True, True])
-        else:
-            print("La colonne 'rul (months)' n'est pas présente dans le DataFrame.")
 
         return df

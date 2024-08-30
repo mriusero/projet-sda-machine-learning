@@ -73,6 +73,8 @@ def load_data():
 def merge_data(training_data):
 
     df1 = pd.merge(training_data['degradation_data'], training_data['failure_data'], on='item_id', how='left')
+    df1['label'] = (df1['rul (months)'] <= 6).astype(int)
+    df1 = df1.sort_values(by=["item_id", "time (months)"], ascending=[True, True])
     #df1.rename(columns={'item_id': 'item_index'}, inplace=True)
     #df1['item_index'] = df1['item_index'].apply(lambda x: f'item_{x}')
 
@@ -96,7 +98,7 @@ def merge_data(training_data):
     df3.to_csv('./data/output/pseudo_testing/pseudo_testing_data_with_truth.csv', index=False)
     df4.to_csv('./data/output/testing/testing_data_phase1.csv', index=False)
 
-    update_message = 'Random data generated with success !'
+    update_message = 'New data generated successfully !'
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     gc.collect()

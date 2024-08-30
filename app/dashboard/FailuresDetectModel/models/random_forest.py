@@ -1,13 +1,11 @@
 import numpy as np
 import pandas as pd
-
 from ...functions import load_failures
-
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
 import streamlit as st
-
+from ..validation import generate_submission_file, calculate_score
 
 class RandomForestClassifierModel:
     def __init__(self):
@@ -27,7 +25,7 @@ class RandomForestClassifierModel:
 
     def prepare_data(self, df, target_col='Failure mode'):
         """Prepare data for training and prediction."""
-        # Aggregate features by item_index
+
         aggregated_df = df.groupby('item_id').agg({
             'time (months)': 'mean',
             'length_filtered': ['mean', 'std', 'max', 'min'],
@@ -57,7 +55,6 @@ class RandomForestClassifierModel:
 
         self.model.fit(X_train, y_train)
 
-
     def predict(self, X_test):
         if self.model is None:
             raise ValueError("The model has not been trained.")
@@ -69,25 +66,45 @@ class RandomForestClassifierModel:
             'item_id': X_test.index,
             'Failure mode (rf)': predictions_decoded
         })
-        prediction_df.loc[:, 'item_id'] = prediction_df['item_id'].astype(str)
-        prediction_df.loc[:, 'item_id'] = prediction_df['item_id'].apply(lambda x: f'item_{x}')
         return prediction_df
 
     def save_predictions(self, output_path, predictions, step):
-
         file_path = f"{output_path}/rf_predictions_{step}.csv"
         predictions.to_csv(file_path, index=False)
-        #st.success(f"Predictions saved successfully at {file_path}")
 
     def display_results(self, df):
-
         st.dataframe(df)
-#        col1, col2 = st.columns(2)
-#        with col1:
-#            st.write("Failure Modes by Time")
-#            st.bar_chart(df[['time (months)', 'Failure mode (rf)']].groupby('time (months)').size())
-#        with col2:
-#            st.write("Failure Modes by Source")
-#            st.bar_chart(df[['source', 'Failure mode (rf)']].groupby('source').size())
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("Failure Modes by Time")
+            st.bar_chart(df[['time (months)', 'Failure mode (rf)']].groupby('time (months)').size())
+        with col2:
+            st.write("Failure Modes by Source")
+            st.bar_chart(df[['source', 'Failure mode (rf)']].groupby('source').size())
 
+    def run_full_pipeline(self, train_df, pseudo_test_with_truth_df, test_df):
+        """Run the full pipeline from training to saving and displaying results."""
 
+        model_name = 'RandomForestClassifierModel'
+        st.markdown(f"## {model_name}")
+        output_path = 'data/output/submission/random_forest'
+        # Step 1: Prepare data and train the model
+        X_train, y_train = self.prepare_data(train_df)
+        self.train(X_train, y_train)
+
+        # Step 2: Cross-validation predictions and scoring
+        X_cv, y_cv = self.prepare_data(pseudo_test_with_truth_df)
+        predictions_cv = self.predict(X_cv)
+        self.save_predictions(output_path, predictions_cv, step='cross-val')
+        generate_submission_file(model_name, output_path, step='cross-val')
+        score = calculate_score(output_path, step='cross-val')
+        st.write(f"Score de cross validation pour {model_name}: {score}")
+
+        # Step 3: Final test predictions and scoring
+        X_test, _ = self.prepare_data(test_df, target_col=None)
+        predictions_test = self.predict(X_test)
+        self.save_predictions(output_path, predictions_test, step='final-test')
+        generate_submission_file(model_name, output_path, step='final-test')
+        final_score = calculate_score(output_path, step='final-test')
+        st.write(f"Le score final pour {model_name} est de {final_score}")
+        st.dataframe(predictions_test)

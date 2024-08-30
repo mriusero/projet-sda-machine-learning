@@ -11,11 +11,7 @@ def generate_submission_file(model_name, output_path, step):
     if model_name == 'LSTMModel':
 
         lstm_results = pd.read_csv(f"{output_path}/lstm_predictions_{step}.csv")
-        lstm_results = lstm_results[['item_id', 'crack_failure',
-                  #                   'Failure mode (lstm)',
-                              #       'crack_failure_filtered', 'crack_failure_filtered',
-                              #       'control_board_failure_filtered'
-                                     ]]
+        lstm_results = lstm_results[['item_id', 'crack_failure']]
 
         for item_index, group in lstm_results.groupby('item_id'):
             formatted_item_index = f"item_{item_index}"
@@ -41,14 +37,22 @@ def generate_submission_file(model_name, output_path, step):
         rf_results = pd.read_csv(f"{output_path}/rf_predictions_{step}.csv")
 
         for item_index, group in rf_results.groupby('item_id'):
-            formatted_item_index = f"{item_index}"
+            formatted_item_index = f"item_{item_index}"
 
-            print(f"formatted_item_index: {formatted_item_index}")
             if (group['Failure mode (rf)'] == 'Control board failure').any():
                 submission_df.loc[submission_df['item_index'] == formatted_item_index, 'label'] = int(1)
             elif (group['Failure mode (rf)'] == 'Infant mortality').any():
                 submission_df.loc[submission_df['item_index'] == formatted_item_index, 'label'] = int(1)
 
+    elif model_name == 'GradientBoostingSurvivalModel':
+
+        gbsa_results = pd.read_csv(f"{output_path}/gbsa_predictions_{step}.csv")
+
+        for item_index, group in gbsa_results.groupby('item_id'):
+            formatted_item_index = f"item_{item_index}"
+
+            if (group['predicted_survival_6_months'] == 1).any():
+                submission_df.loc[submission_df['item_index'] == formatted_item_index, 'label'] = int(1)
     else:
         raise ValueError("'model_name' not defined in 'generate_submission_file()'")
 

@@ -221,7 +221,7 @@ class DataVisualizer:
         st.plotly_chart(fig, use_container_width=True)
 
 
-    def plot_correlation_with_target(self, df_key, target_variable='Time to failure (months)'):
+    def plot_correlation_with_target(self, df_key, target_variable):
         df = self.df[df_key]
 
         numeric_df = df.select_dtypes(include=[float, int])
@@ -242,7 +242,7 @@ class DataVisualizer:
             fig = go.Figure(data=go.Bar(
                 x=correlations.index,
                 y=correlations.values,
-                marker_color='orange'
+                marker_color='#00d2ba'
             ))
 
             fig.update_layout(
@@ -270,7 +270,7 @@ class DataVisualizer:
         data = self.df[df_key]
 
         fig = plt.figure(figsize=(10, 6))  # Définir la taille de la figure
-        sns.boxplot(x=x_col, y=y_col, data=data, palette="Set2")  # Créer le boxplot avec seaborn
+        sns.boxplot(x=x_col, y=y_col, data=data, hue=x_col, palette="Set2", legend=False)  # Créer le boxplot avec seaborn
 
         plt.xlabel(x_col)  # Label pour l'axe x
         plt.ylabel(y_col)  # Label pour l'axe y
