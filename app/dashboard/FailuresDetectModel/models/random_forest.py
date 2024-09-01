@@ -87,7 +87,7 @@ class RandomForestClassifierModel:
 
         model_name = 'RandomForestClassifierModel'
         st.markdown(f"## {model_name}")
-        output_path = 'data/output/submission/random_forest'
+        output_path = 'data/output/submission_phase_I/random_forest'
         # Step 1: Prepare data and train the model
         X_train, y_train = self.prepare_data(train_df)
         self.train(X_train, y_train)

@@ -158,15 +158,15 @@ class GradientBoostingSurvivalModel:
         """
         Saves the best hyperparameters to a file.
         """
-        os.makedirs('data/output/submission/gradient_boosting', exist_ok=True)
-        with open('data/output/submission/gradient_boosting/best_hyperparameters.pkl', 'wb') as f:
+        os.makedirs('data/output/submission_phase_I/gradient_boosting', exist_ok=True)
+        with open('data/output/submission_phase_I/gradient_boosting/best_hyperparameters.pkl', 'wb') as f:
             pickle.dump(self.best_params, f)
 
     def _load_hyperparameters(self):
         """
         Loads the best hyperparameters from a file.
         """
-        path = 'data/output/submission/gradient_boosting/best_hyperparameters.pkl'
+        path = 'data/output/submission_phase_I/gradient_boosting/best_hyperparameters.pkl'
         if os.path.exists(path):
             with open(path, 'rb') as f:
                 self.best_params = pickle.load(f)
@@ -278,13 +278,15 @@ class GradientBoostingSurvivalModel:
             pseudo_test_with_truth_df: pd.DataFrame,
             test_df: pd.DataFrame,
             optimize: bool,
-            columns_to_include: Optional[List[str]] = None
+            output_path: str,
+            phase: str,
+            columns_to_include: Optional[List[str]] = None,
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Runs the full pipeline including training, validation, and testing with the option to include specific columns.
         """
         model_name = 'GradientBoostingSurvivalModel'
-        output_path = 'data/output/submission/gradient_boosting'
+
         st.markdown("## GradientBoostingSurvivalModel Pipeline")
         print('Running GradientBoostingSurvivalModel Pipeline ...')
 
@@ -324,9 +326,9 @@ class GradientBoostingSurvivalModel:
             self.compute_deducted_rul
         ).explode().astype(int).reset_index(drop=True)
 
-        self.save_predictions('data/output/submission/gradient_boosting', val_predictions_merged, step='cross-val')
-        generate_submission_file(model_name, output_path, step='cross-val')
-        score = calculate_score('data/output/submission/gradient_boosting', step='cross-val')
+        self.save_predictions(f'data/output/submission_{phase}/gradient_boosting', val_predictions_merged, step='cross-val')
+        generate_submission_file(model_name, output_path, phase=phase, step='cross-val')
+        score = calculate_score(f'data/output/submission_{phase}/gradient_boosting', phase=phase, step='cross-val')
         st.write(f"Cross-validation score: {score}")
         self.display_results(X_train, val_predictions_merged.sort_values(['item_id', 'time (months)'], ascending=True))
 
@@ -337,9 +339,9 @@ class GradientBoostingSurvivalModel:
             self.compute_deducted_rul
         ).explode().astype(int).reset_index(drop=True)
 
-        self.save_predictions('data/output/submission/gradient_boosting', test_predictions, step='final-test')
-        generate_submission_file(model_name, output_path, step='final-test')
-        final_score = calculate_score('data/output/submission/gradient_boosting', step='final-test')
+        self.save_predictions(f'data/output/submission_{phase}/gradient_boosting', test_predictions, step='final-test', )
+        generate_submission_file(model_name, output_path, phase=phase, step='final-test')
+        final_score = calculate_score(f'data/output/submission_{phase}/gradient_boosting', phase=phase, step='final-test')
         st.write(f"Final score: {final_score}")
 
         return val_predictions_merged, test_predictions

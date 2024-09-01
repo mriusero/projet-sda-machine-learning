@@ -17,7 +17,8 @@ class DataVisualizer:
             'train': self.preprocessing(self.dataframes['train']),
             'pseudo_test': self.preprocessing(self.dataframes['pseudo_test']),
             'pseudo_test_with_truth': self.preprocessing(self.dataframes['pseudo_test_with_truth']),
-            'test': self.preprocessing(self.dataframes['test'])
+            'test': self.preprocessing(self.dataframes['test']),
+            'scenarios': self.preprocessing(self.dataframes['scenarios'])
         }
 
     @st.cache_data

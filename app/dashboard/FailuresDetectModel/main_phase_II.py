@@ -60,8 +60,9 @@ def ml_pipeline(train_df, pseudo_test_with_truth_df, test_df, optimize):
                           # "length_measured_ratio_1-2", "length_measured_ratio_2-3",
                           # "length_measured_ratio_3-4", "length_measured_ratio_4-5",
                           # "length_measured_ratio_5-6",
-
-    val_predictions, test_predictions = gb_model.run_full_pipeline(train_df, pseudo_test_with_truth_df, test_df, optimize, columns_to_include)
+    output_path = 'data/output/submission_phase_II/gradient_boosting'
+    phase = 'phase_II'
+    val_predictions, test_predictions = gb_model.run_full_pipeline(train_df, pseudo_test_with_truth_df, test_df, optimize, output_path, phase, columns_to_include)
     col1, col2 = st.columns(2)
     with col1:
         st.write('## Cross val')

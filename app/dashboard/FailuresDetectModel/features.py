@@ -3,41 +3,45 @@ import streamlit as st
 import pandas as pd
 from statsmodels.tsa.seasonal import STL
 
+
 class FeatureAdder:
     def __init__(self, min_sequence_length):
         self.min_sequence_length = min_sequence_length
 
     def add_features(self, df, particles_filtery):
-
         """Feature Engineering"""
 
-        def calculate_rolling_features(series, window_size):
-            return {
-                'mean': series.rolling(window=window_size, min_periods=1).mean(),
-                'std': series.rolling(window=window_size, min_periods=1).std(),
-                'max': series.rolling(window=window_size, min_periods=1).max(),
-                'min': series.rolling(window=window_size, min_periods=1).min()
-            }
-        def calculate_static_features(series):
-            return {
-                'mean': series.mean(),
-                'std': series.std(),
-                'max': series.max(),
-                'min': series.min()
-            }
+        def calculate_rolling_features(df, column, window_size):
+            # Calcul des statistiques de fenêtres mobiles
+            rolling = df.groupby('item_id')[column].rolling(window=window_size, min_periods=1)
+            rolling_mean = rolling.mean().reset_index(level=0, drop=True)
+            rolling_std = rolling.std().reset_index(level=0, drop=True)
+            rolling_max = rolling.max().reset_index(level=0, drop=True)
+            rolling_min = rolling.min().reset_index(level=0, drop=True)
+            return rolling_mean, rolling_std, rolling_max, rolling_min
 
-        def replace_nan_by_mean(series):
-            return series.fillna(series.mean())
+        def calculate_static_features(df, column):
+            # Calcul des statistiques globales
+            group = df.groupby('item_id')[column]
+            static_mean = group.transform('mean')
+            static_std = group.transform('std')
+            static_max = group.transform('max')
+            static_min = group.transform('min')
+            return static_mean, static_std, static_max, static_min
 
-        def replace_nan_by_one(series):
-            return series.fillna(1)
+        def replace_nan_by_mean_and_one(df, columns):
+            # Remplace NaN par la moyenne, puis par 1 pour les 0 restants
+            for col in columns:
+                df[col] = df[col].fillna(df[col].mean()).fillna(1)
+            return df
 
         def particles_filtering(df):
             pf = ParticleFilter()
             df = pf.filter(df, beta0_range=(-1, 1), beta1_range=(-0.1, 0.1), beta2_range=(0.1, 1))
             return df
 
-        if particles_filtery == True:
+        if particles_filtery:
+            # Suppression des colonnes si elles existent
             to_recall = [
                 'length_filtered', 'beta0', 'beta1', 'beta2',
                 'rolling_means_filtered', 'rolling_stds_filtered',
@@ -45,33 +49,61 @@ class FeatureAdder:
                 'rolling_means_measured', 'rolling_stds_measured',
                 'rolling_maxs_measured', 'rolling_mins_measured'
             ]
-            existing_columns = [col for col in to_recall if col in df.columns]
-            df = df.drop(columns=existing_columns)
+            df.drop(columns=[col for col in to_recall if col in df.columns], inplace=True)
             df = particles_filtering(df)
-
         else:
+            # Suppression des colonnes si elles existent
             to_recall = [
                 'rolling_means_filtered', 'rolling_stds_filtered', 'rolling_maxs_filtered', 'rolling_mins_filtered',
                 'rolling_means_measured', 'rolling_stds_measured', 'rolling_maxs_measured', 'rolling_mins_measured'
             ]
-            existing_columns = [col for col in to_recall if col in df.columns]
-            df = df.drop(columns=existing_columns)
+            df.drop(columns=[col for col in to_recall if col in df.columns], inplace=True)
 
+        # Calcul des rolling features et des static features
+        for col in ['time (months)', 'length_filtered']:
+            rolling_mean, rolling_std, rolling_max, rolling_min = calculate_rolling_features(df, col,
+                                                                                             self.min_sequence_length)
+            static_mean, static_std, static_max, static_min = calculate_static_features(df, col)
+
+            # Ajout des nouvelles caractéristiques
+            df[f'rolling_mean_{col}'] = rolling_mean
+            df[f'rolling_std_{col}'] = rolling_std
+            df[f'rolling_max_{col}'] = rolling_max
+            df[f'rolling_min_{col}'] = rolling_min
+
+            df[f'static_mean_{col}'] = static_mean
+            df[f'static_std_{col}'] = static_std
+            df[f'static_max_{col}'] = static_max
+            df[f'static_min_{col}'] = static_min
+
+        # Remplacement des NaN
+        rolling_columns = [f'rolling_mean_{col}', f'rolling_std_{col}', f'rolling_max_{col}', f'rolling_min_{col}',
+                           f'static_mean_{col}', f'static_std_{col}', f'static_max_{col}', f'static_min_{col}']
+        replace_nan_by_mean_and_one(df, rolling_columns)
+
+        # Remplir NaN pour certaines colonnes spécifiques
+        df[['time (months)', 'length_measured', 'length_filtered']] = df[
+            ['time (months)', 'length_measured', 'length_filtered']].fillna(0)
+
+        # Ajout de décalages et de ratios
         def add_shifts_and_ratios(df, columns, max_shift=6):
             for col in columns:
-                # Ajouter des colonnes décalées
+                # Ajout des colonnes décalées
                 for shift in range(1, max_shift + 1):
-                    df[f'{col}_shift_{shift}'] = df.groupby('item_id')[col].shift(shift)
+                    shifted_col = df.groupby('item_id')[col].shift(shift)
+                    df[f'{col}_shift_{shift}'] = shifted_col
 
-                # Ajouter des ratios entre les décalages
+                # Calcul des ratios entre les décalages
                 for shift in range(1, max_shift):
-                    df[f'{col}_ratio_{shift}-{shift + 1}'] = (
-                            df[f'{col}_shift_{shift}'] / (df[f'{col}_shift_{shift + 1}'] + 1e-9)
-                    # Ajout d'une petite valeur pour éviter la division par zéro
-                    )
+                    df[f'{col}_ratio_{shift}-{shift + 1}'] = df[f'{col}_shift_{shift}'] / (
+                                df[f'{col}_shift_{shift + 1}'] + 1e-9)
             df.fillna(0, inplace=True)
             return df
 
+        shift_columns = ['length_filtered']
+        df = add_shifts_and_ratios(df, shift_columns)
+
+        # Décomposition de la série temporelle
         def decompose_time_series(df, time_col, value_col, period=12):
             # Vérifier la présence des colonnes
             if time_col not in df.columns or value_col not in df.columns:
@@ -88,7 +120,6 @@ class FeatureAdder:
             # Trier et préparer le DataFrame
             df_copy = df_copy.sort_values(by=time_col)
             df_copy = df_copy.dropna(subset=[time_col, value_col])
-            #df_copy.set_index(time_col, inplace=True)
 
             # Effectuer la décomposition STL
             try:
@@ -105,38 +136,9 @@ class FeatureAdder:
 
             return df
 
-        for col in ['time (months)', 'length_filtered']:
-            for stat in ['mean', 'std', 'max', 'min']:
-                col_name = f'rolling_{stat}_{col}'
-                df[col_name] = df.groupby('item_id')[col].transform(
-                    lambda x: calculate_rolling_features(x, len(x))[stat]
-                )
-                df[col_name] = df.groupby('item_id')[col_name].transform(
-                    lambda x: replace_nan_by_mean(x)
-                )
-                df[col_name] = df.groupby('item_id')[col_name].transform(
-                    lambda x: replace_nan_by_one(x)
-                )
-                col_name = f'static_{stat}_{col}'
-                df[col_name] = df.groupby('item_id')[col].transform(
-                    lambda x: calculate_static_features(x)[stat]
-                )
-                df[col_name] = df.groupby('item_id')[col_name].transform(
-                    lambda x: replace_nan_by_mean(x)
-                )
-                df[col_name] = df.groupby('item_id')[col_name].transform(
-                    lambda x: replace_nan_by_one(x)
-                )
-
-        to_fill_0 = ['time (months)', 'length_measured', 'length_filtered']
-        df[to_fill_0] = df[to_fill_0].fillna(0)
-
-        # Liste des colonnes pour lesquelles on souhaite créer des caractéristiques décalées et des ratios
-        shift_columns = ['length_filtered']
-        df = add_shifts_and_ratios(df, shift_columns)
-
         df = decompose_time_series(df, 'time (months)', 'length_filtered')
 
-        df = df.sort_values(by=["item_id", "time (months)"], ascending=[True, True])
+        # Trier le DataFrame final
+        df.sort_values(by=["item_id", "time (months)"], ascending=[True, True], inplace=True)
 
         return df

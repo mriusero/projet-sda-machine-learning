@@ -346,7 +346,7 @@ class LSTMModel(ModelBase):
         """
         model_name = 'LSTMModel'
         st.markdown(f"## {model_name}")
-        output_path = 'data/output/submission/lstm'
+        output_path = 'data/output/submission_phase_I/lstm'
         # Préparation des séquences de formation
         X_, y_ = self.prepare_train_sequences(train_df)
 

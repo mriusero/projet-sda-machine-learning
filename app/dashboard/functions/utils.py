@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import re
-import glob
+from glob import glob
 from datetime import datetime
 import gc
 
@@ -70,6 +70,62 @@ def load_data():
 
     return merge_data(data)
 
+
+def load_scenarios():
+    """
+    Charge tous les scénarios d'un répertoire donné et retourne un dictionnaire de DataFrames.
+
+    Args:
+    - phase2_path (str): Chemin du dossier contenant les scénarios (ex : 'phase2').
+
+    Returns:
+    - dict: Un dictionnaire où chaque clé est 'scenario_x' et chaque valeur est un DataFrame pandas.
+    - DataFrame: Un DataFrame global combinant tous les items de tous les scénarios avec une colonne 'scenario'.
+    """
+    phase2_path = './data/input/testing_data/phase2'
+    scenarios_data = {}
+    global_df = pd.DataFrame()
+
+    # Lister tous les répertoires dans le dossier phase2
+    for scenario_dir in sorted(os.listdir(phase2_path)):
+        scenario_path = os.path.join(phase2_path, scenario_dir)
+
+        # Vérifier si c'est un répertoire
+        if os.path.isdir(scenario_path) and scenario_dir.startswith("scenario_"):
+            scenario_df = pd.DataFrame()
+
+            # Extraire l'entier de 'scenario_x' pour l'utiliser comme 'scenario_id'
+            scenario_id = int(scenario_dir.split('_')[1])
+
+            # Lister tous les fichiers CSV dans le répertoire du scénario
+            for item_file in sorted(os.listdir(scenario_path)):
+                item_path = os.path.join(scenario_path, item_file)
+
+                # Vérifier si c'est un fichier CSV
+                if item_file.endswith('.csv'):
+                    # Lire le CSV
+                    item_df = pd.read_csv(item_path)
+
+                    # Extraire l'identifiant de l'item de 'item_x.csv' et l'ajouter comme colonne 'item_id'
+                    item_id = int(item_file.split('_')[1].split('.')[0])
+                    item_df['item_id'] = item_id
+
+                    # Ajouter les données au DataFrame du scénario
+                    scenario_df = pd.concat([scenario_df, item_df], ignore_index=True)
+
+            # Sauvegarder le DataFrame du scénario dans le dictionnaire
+            scenarios_data[scenario_dir] = scenario_df
+
+            # Ajouter une colonne 'scenario_id' pour identifier le scénario sous forme d'entier dans le DataFrame global
+            scenario_df['scenario_id'] = scenario_id
+
+            # Ajouter les données au DataFrame global
+            global_df = pd.concat([global_df, scenario_df], ignore_index=True)
+            global_df.to_csv('./data/output/testing/scenarios_phase2.csv', index=False)
+    return scenarios_data, global_df
+
+
+
 def merge_data(training_data):
 
     df1 = pd.merge(training_data['degradation_data'], training_data['failure_data'], on='item_id', how='left')
@@ -108,13 +164,15 @@ def dataframing_data():
         'train': './data/output/training/training_data.csv',
         'pseudo_test': './data/output/pseudo_testing/pseudo_testing_data.csv',
         'pseudo_test_with_truth': './data/output/pseudo_testing/pseudo_testing_data_with_truth.csv',
-        'test': './data/output/testing/testing_data_phase1.csv'
+        'test': './data/output/testing/testing_data_phase1.csv',
+        'scenarios': './data/output/testing/scenarios_phase2.csv'
     }
     dataframes = {
         'train': pd.read_csv(paths['train']),
         'pseudo_test': pd.read_csv(paths['pseudo_test']),
         'pseudo_test_with_truth': pd.read_csv(paths['pseudo_test_with_truth']),
-        'test': pd.read_csv(paths['test'])
+        'test': pd.read_csv(paths['test']),
+        'scenarios': pd.read_csv(paths['scenarios'])
     }
     return dataframes
 
@@ -152,7 +210,7 @@ def detect_outliers(df: pd.DataFrame) -> pd.DataFrame:
 
 def combine_submissions_for_scenario(folder_path):
 
-    file_paths = glob.glob(os.path.join(folder_path, '*.csv'))
+    file_paths = glob(os.path.join(folder_path, '*.csv'))
     dfs = [pd.read_csv(file) for file in file_paths]
     combined_df = pd.concat(dfs)
     final_df = combined_df.groupby('item_index').agg({'predicted_rul': 'max'}).reset_index()
