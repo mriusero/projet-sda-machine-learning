@@ -20,8 +20,15 @@ class LSTMModel(ModelBase):
         self.model = None  # Model initialisation to None
 
     def train(self, X_train, y_train):
+        # Print the shape and type of training data
+        print("Training input shape:", X_train.shape)
+        print("Training input type:", type(X_train))
+        print("Training target shapes:")
+        print("lengths_filtered_output:", y_train['lengths_filtered_output'].shape)
+        print("lengths_measured_output:", y_train['lengths_measured_output'].shape)
+
         # Correct input shape based on data dimensions
-        input_shape = (self.min_sequence_length, X_train.shape[2])  # Dynamically determined based on X_train
+        input_shape = (self.min_sequence_length, X_train.shape[2])
 
         # Define model architecture
         inputs = Input(shape=input_shape)
@@ -29,8 +36,8 @@ class LSTMModel(ModelBase):
         x = LSTM(64, return_sequences=False)(x)
 
         # Ajout de couches régressives
-        x = Dense(32, activation='relu')(x)  # Couches régressives supplémentaires
-        x = Dropout(0.2)(x)  # Optionnel : Dropout pour éviter le surapprentissage
+        x = Dense(32, activation='relu')(x)
+        x = Dropout(0.2)(x)
         x = Dense(16, activation='relu')(x)
 
         # Output layers for both predictions
@@ -39,9 +46,7 @@ class LSTMModel(ModelBase):
 
         # Compile model
         self.model = Model(inputs=inputs, outputs=[forecast_lengths_filtered, forecast_lengths_measured])
-        self.model.compile(optimizer='adam',
-                           loss='mse',
-                           metrics=['mae', 'accuracy'])
+        self.model.compile(optimizer='adam', loss='mse', metrics=['mae', 'accuracy'])
 
         # Training settings
         num_epochs = 100
@@ -107,6 +112,10 @@ class LSTMModel(ModelBase):
         for item_index in item_indices:
             item_data = df[df['item_id'] == item_index].sort_values(by='time (months)')
 
+            # Print the columns being used for sequence preparation
+            print(f"Preparing training sequences for item_id: {item_index}")
+            print("Columns used:", item_data.columns.tolist())
+
             times = item_data['time (months)'].values
             lengths_filtered = item_data['length_filtered'].values
             lengths_measured = item_data['length_measured'].values
@@ -154,13 +163,18 @@ class LSTMModel(ModelBase):
         targets_filtered = np.array(targets_filtered).reshape(-1, self.forecast_months)
         targets_measured = np.array(targets_measured).reshape(-1, self.forecast_months)
 
-        return sequences_padded, {'lengths_filtered_output': targets_filtered, 'lengths_measured_output': targets_measured}
+        return sequences_padded, {'lengths_filtered_output': targets_filtered,
+                                  'lengths_measured_output': targets_measured}
 
     def predict_futures_values(self, df):
         if self.model is None:
             raise ValueError("The model has not been trained.")
 
         def extract_features(item_data):
+            # Print the columns being used for predictions
+            print("Extracting features for predictions.")
+            print("Columns availables:", item_data.columns.tolist())
+
             features = {
                 'times': item_data['time (months)'].values,
                 'length_filtered': item_data['length_filtered'].values,
@@ -202,7 +216,11 @@ class LSTMModel(ModelBase):
 
             for idx, item_index in enumerate(item_indices):
                 item_data = df[df['item_id'] == item_index].sort_values(by='time (months)')
+
                 features = extract_features(item_data)
+
+                print("Columns used:", list(features.keys()))
+
                 last_sequence_padded = prepare_test_sequence(features)
                 # Assurez-vous que `self.model.predict` retourne bien les deux sorties
                 pred_lengths_filtered, pred_lengths_measured = self.model.predict(last_sequence_padded)
@@ -337,8 +355,8 @@ class LSTMModel(ModelBase):
 
         # Validation croisée sur pseudo_test_with_truth_df
         all_predictions = self.predict_futures_values(pseudo_test_with_truth_df)
-        lstm_predictions = self.add_predictions_to_data(pseudo_test_with_truth_df, all_predictions)
-        self.save_predictions(output_path, lstm_predictions, step='cross-val')
+        lstm_predictions_cross_val = self.add_predictions_to_data(pseudo_test_with_truth_df, all_predictions)
+        self.save_predictions(output_path, lstm_predictions_cross_val, step='cross-val')
 
         # Génération du fichier de soumission et calcul du score pour la validation croisée
         generate_submission_file(model_name, output_path, step='cross-val')
@@ -347,8 +365,8 @@ class LSTMModel(ModelBase):
 
         # Prédictions finales sur test_df
         all_predictions = self.predict_futures_values(test_df)
-        lstm_predictions = self.add_predictions_to_data(test_df, all_predictions)
-        self.save_predictions(output_path, lstm_predictions, step='final-test')
+        lstm_predictions_final_test = self.add_predictions_to_data(test_df, all_predictions)
+        self.save_predictions(output_path, lstm_predictions_final_test, step='final-test')
 
         # Génération du fichier de soumission et calcul du score final
         generate_submission_file(model_name, output_path, step='final-test')
@@ -356,4 +374,6 @@ class LSTMModel(ModelBase):
         st.write(f"Le score final pour {model_name} est de {final_score}")
 
         # Affichage des résultats
-        self.display_results(lstm_predictions)
+        self.display_results(lstm_predictions_final_test)
+
+        return lstm_predictions_cross_val, lstm_predictions_final_test

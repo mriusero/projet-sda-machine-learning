@@ -35,7 +35,13 @@ def page_3():
     st.write("Colonnes présentes uniquement dans le second DataFrame :", cols_only_in_df2)
 
     st.session_state.data.plot_correlation_matrix(df_key='train')
-    st.session_state.data.plot_correlation_with_target(df_key='train')
+    st.session_state.data.plot_correlation_with_target(df_key='train',
+                                                       target_variable='label')
+    st.session_state.data.plot_correlation_with_target(df_key='train',
+                                                       target_variable='Time to failure (months)')
+    st.session_state.data.plot_correlation_with_target(df_key='train',
+                                                       target_variable='length_filtered')
+    run_statistical_test(df2, 'multicollinearity')
 
     col1, col2 = st.columns(2)
     with col1:

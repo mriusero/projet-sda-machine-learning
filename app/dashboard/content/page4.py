@@ -50,11 +50,13 @@ def page_4():
     st.markdown(texte)
 
     train_df = st.session_state.data.get_the('train')
+    pseudo_test_df = st.session_state.data.get_the('pseudo_test_with_truth')
 
-    st.markdown('## #Train_')
+
     col1, col2 = st.columns([1,2])
 
     with col1:
+        st.markdown('## #Train_')
         st.dataframe(train_df)
 
         st.markdown('### #Variables types_')
@@ -75,6 +77,14 @@ def page_4():
 
 
     with col2:
+        st.markdown('## #Pseudo test with truth_')
+        st.dataframe(pseudo_test_df)
+
+        st.markdown('### #Variables types_')
+        variable_types_df = display_variable_types(pseudo_test_df)
+        st.dataframe(variable_types_df)
+
+
         st.session_state.data.plot_pairplot(data=pd.read_csv('./data/output/training/training_data.csv'),
                                             hue='Failure mode',
                                             palette='hls')

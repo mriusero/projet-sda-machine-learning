@@ -82,14 +82,18 @@ def page_1():
                                                       palette_type='qualitative',
                                                       palette_name=qualitative_pal)
 
-    st.markdown('## #Remaining Useful Life (RUL)_')
-    st.session_state.data.plot_histogram_with_color('train', 'rul (months)', 'length_filtered', 'Failure mode',
-                                                    palette_type='qualitative',
-                                                    palette_name=qualitative_pal)
+    # st.markdown('## #Remaining Useful Life (RUL)_')
+    # st.session_state.data.plot_histogram_with_color('train', 'rul (months)', 'length_filtered', 'Failure mode',
+    #                                                 palette_type='qualitative',
+    #                                                 palette_name=qualitative_pal)
 
     st.write("Statistiques Descriptives :")  # Calcul des statistiques descriptives
-    statistics = pd.read_csv('./data/output/training/training_data.csv').describe(include='all')
+    df = pd.read_csv('./data/output/training/training_data.csv')
+    statistics = df.copy().describe(include=[np.number])
     st.dataframe(statistics)
+
+    grouped_stats_df = df.copy().groupby('Failure mode').describe()
+    st.dataframe(grouped_stats_df)
 
     st.markdown("## TEST_")
     col1, col2 = st.columns([2, 2])
