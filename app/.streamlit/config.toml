@@ -6,7 +6,7 @@ secondaryBackgroundColor = "#0d1b25"
 #textColor = "#262730"
 #font = "sans serif"
 
-default_background = "#0E1117"
+#default_background = "#0E1117"
 
 [browser]
 

@@ -1,40 +1,107 @@
 import streamlit as st
+import pandas as pd
 from ..FailuresDetectModel import clean_data, run_statistical_test
-from ..functions import dataframing_data
-
+from ..functions import dataframing_data, display_variable_types, compare_dataframes
+from ..FailuresDetectModel import standardize_values, normalize_values
 def page_4():
-    st.markdown('<div class="header">#4 Statistics & Preprocessing_</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header">#4 Statistics_</div>', unsafe_allow_html=True)
     texte = """
 
-    Here is the Statistics & Preprocessing phase.
+    Here is the Statistics phase.
 
+----------------------------------------------
+
+    'length_filtered', 'length_measured'
+
+    'beta0', 'beta1', 'beta2', 
+   
+    'static_std_length_measured', 
+    'static_max_length_measured',
+    'static_mean_length_measured', 
+    'static_min_length_measured',
+    'rolling_mean_length_measured', 
+    'rolling_max_length_measured', 
+    'rolling_std_length_measured', 
+    'rolling_min_length_measured'
+    
+    'static_std_time (months)',
+    'static_mean_time (months)', 
+    'static_max_time (months)', 
+    'static_min_time (months)',
+    'rolling_std_time (months)',    
+    'rolling_min_time (months)', 
+    'rolling_max_time (months)',  
+    'rolling_mean_time (months)', 
+    
+    'static_std_length_filtered', 
+    'static_mean_length_filtered', 
+    'static_max_length_filtered', 
+    'static_min_length_filtered', 
+    'rolling_max_length_filtered', 
+    'rolling_mean_length_filtered',
+    'rolling_min_length_filtered', 
+    'rolling_std_length_filtered', 
+     
+    'crack_failure', 
+    'has_zero_twice', 
+    'end_life', 
+    
 """
     st.markdown(texte)
 
-    dataframes = dataframing_data()
+    train_df = st.session_state.data.get_the('train')
+    pseudo_test_df = st.session_state.data.get_the('pseudo_test_with_truth')
 
-    col1, col2 = st.columns(2)
+
+    col1, col2 = st.columns([1,2])
 
     with col1:
-        st.markdown("""
-        ## #Before statistics_
-            """)
-        for name, dataframe in dataframes.items():
-            df = clean_data(dataframe)
+        st.markdown('## #Train_')
+        st.dataframe(train_df)
 
-            st.markdown(f"### {name}")
-            st.dataframe(df)
+        st.markdown('### #Variables types_')
+        variable_types_df = display_variable_types(train_df)
+        st.dataframe(variable_types_df)
+
+        st.markdown('### #Statistics_')
+        stats_df = train_df.describe()
+        st.dataframe(stats_df)
+
+        grouped_stats_df = train_df.groupby('Failure mode').describe()
+        st.dataframe(grouped_stats_df)
+
+        st.markdown('#### *item_id*')
+        run_statistical_test(train_df, 'anova', 'item_id')
+        st.markdown('#### *Failure mode*')
+        run_statistical_test(train_df, 'anova', 'Failure mode')
+
 
     with col2:
-        st.markdown("""
-        ## #After statistics_
-            """)
-        for name, dataframe in dataframes.items():
-            df = clean_data(dataframe)
-            df = add_features(df)
+        st.markdown('## #Pseudo test with truth_')
+        st.dataframe(pseudo_test_df)
 
-            st.markdown(f"### {name}")
-            result = run_statistical_test(df, 'normality', 'time (months)')
-            st.write(result)
-            result = run_statistical_test(df, 'normality', 'crack length (arbitary unit)')
-            st.write(result)
+        st.markdown('### #Variables types_')
+        variable_types_df = display_variable_types(pseudo_test_df)
+        st.dataframe(variable_types_df)
+
+
+        st.session_state.data.plot_pairplot(data=pd.read_csv('./data/output/training/training_data.csv'),
+                                            hue='Failure mode',
+                                            palette='hls')
+        df = pd.read_csv('./data/output/training/training_data.csv')
+        run_statistical_test(df, 'normality', 'time (months)')
+        run_statistical_test(df, 'normality', 'crack length (arbitary unit)')
+        run_statistical_test(df, 'normality', 'rul (months)')
+        run_statistical_test(df, 'normality', 'Time to failure (months)')
+
+        st.session_state.data.boxplot('train', 'Failure mode', 'Time to failure (months)')
+
+    col1, col2 = st.columns(2)
+    with col1 :
+        st.markdown("### #Length Measured")
+        st.session_state.data.decompose_time_series('train', 'time (months)', 'length_measured')
+    with col2 :
+        st.markdown("### #Length Filtered")
+        st.session_state.data.decompose_time_series('train', 'time (months)', 'length_filtered')
+
+    st.session_state.data.plot_correlation_matrix(df_key='train')

@@ -38,13 +38,13 @@ class ParticleFilter:
         filtered_data = []
 
         # Initialiser la barre de progression
-        num_items = len(df['item_index'].unique())
+        num_items = len(df['item_id'].unique())
         progress_bar = st.progress(0)
 
         with st.spinner(f'Particles filtering...'):
             # Traiter chaque 'item_index' individuellement
-            for i, item_index in enumerate(df['item_index'].unique()):
-                df_item = df[df['item_index'] == item_index]
+            for i, item_index in enumerate(df['item_id'].unique()):
+                df_item = df[df['item_id'] == item_index]
                 particles = self.initialize_particles(beta0_range, beta1_range, beta2_range)
 
                 for index, row in df_item.iterrows():

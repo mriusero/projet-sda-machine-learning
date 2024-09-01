@@ -7,64 +7,102 @@ from ..functions import dataframing_data, load_data
 def page_1():
     st.markdown('<div class="header">#1 Exploration_</div>', unsafe_allow_html=True)
 
-    dataframes = dataframing_data()
-
-    texte = """
-## #TRAIN_
-        """
-    st.markdown(texte)
-    df = dataframes['train'].sort_values(by=['item_index', 'time (months)'])
-
+    st.markdown('## #Evolution of crack length over time_')
     col1, col2 = st.columns([2, 2])
+
+    qualitative_pal = 'Safe'
+    continuous_pal = 'Viridis'
+    cyclical_pal = 'IceFire'
+    sequential_pal = 'Inferno'
 
     with col1:
         st.session_state.data.plot_scatter_with_color(df_key='train',
                                                       x_col='time (months)',
                                                       y_col='length_measured',
-                                                      color_col='Failure mode')
+                                                      color_col='Failure mode',
+                                                      palette_type='qualitative',
+                                                      palette_name=qualitative_pal)
 
-        st.session_state.data.plot_multiple_histogram(df_key='train',
+        st.session_state.data.plot_histogram_with_color(df_key='train',
                                                       x_col='time (months)',
                                                       y_col='length_measured',
-                                                      color_col='Failure mode')
+                                                      color_col='Failure mode',
+                                                      palette_type='qualitative',
+                                                      palette_name=qualitative_pal)
 
     with col2:
         st.session_state.data.plot_scatter_with_color(df_key='train',
                                                       x_col='time (months)',
                                                       y_col='length_filtered',
-                                                      color_col='Failure mode')
+                                                      color_col='Failure mode',
+                                                      palette_type='qualitative',
+                                                      palette_name=qualitative_pal)
 
-        st.session_state.data.plot_multiple_histogram(df_key='train',
+        st.session_state.data.plot_histogram_with_color(df_key='train',
                                                       x_col='time (months)',
                                                       y_col='length_filtered',
-                                                      color_col='Failure mode')
+                                                      color_col='Failure mode',
+                                                      palette_type='qualitative',
+                                                      palette_name=qualitative_pal)
 
-    st.session_state.data.plot_correlation_matrix(df_key='train')
-    st.session_state.data.plot_multiple_histogram('train', 'rul (months)', 'length_filtered', 'Failure mode')
 
-    texte = """
-## #PSEUDO_TEST_WITH_TRUTH_
-            """
-    st.markdown(texte)
+
+
+
+
+
+    st.markdown("## #PSEUDO_TEST_WITH_TRUTH_")
+    st.markdown('## #End of life_')
     col1, col2 = st.columns([2, 2])
     with col1:
-        st.session_state.data.plot_multiple_scatter('pseudo_test_with_truth', 'time (months)', 'length_measured', 'rolling_max_time (months)')
-        st.session_state.data.plot_multiple_scatter('pseudo_test_with_truth', 'time (months)', 'length_measured', 'label')
-        #plot_histogram(df, 'RUL_inf_6')
-    with col2:
-        st.session_state.data.plot_multiple_histogram('pseudo_test_with_truth', 'time (months)', 'length_measured', 'label')
+        st.session_state.data.plot_scatter_with_color('pseudo_test_with_truth', 'time (months)', 'length_measured', 'label',
+                                                      palette_type='continuous',
+                                                      palette_name=continuous_pal)
+        st.session_state.data.plot_scatter_with_color('pseudo_test_with_truth', 'time (months)', 'length_measured', 'true_rul',
+                                                      palette_type='continuous',
+                                                      palette_name=continuous_pal)
+        st.session_state.data.plot_histogram_with_color('pseudo_test_with_truth', 'time (months)', 'length_measured', 'label',
+                                                        palette_type='qualitative',
+                                                        palette_name=qualitative_pal)
+        st.session_state.data.plot_histogram_with_color('pseudo_test_with_truth', 'time (months)', 'length_measured', 'true_rul',
+                                                        palette_type='qualitative',
+                                                        palette_name=qualitative_pal)
 
-        plot_scatter2(df, 'time (months)', 'crack length (arbitary unit)', 'label')
-        plot_histogram(df, 'label')
+    with col2:
+        st.session_state.data.plot_scatter_with_color('pseudo_test_with_truth', 'time (months)', 'length_filtered', 'label',
+                                                      palette_type='continuous',
+                                                      palette_name=continuous_pal)
+        st.session_state.data.plot_scatter_with_color('pseudo_test_with_truth', 'time (months)', 'length_filtered', 'true_rul',
+                                                      palette_type='continuous',
+                                                      palette_name=continuous_pal)
+        st.session_state.data.plot_histogram_with_color('pseudo_test_with_truth', 'time (months)', 'length_filtered', 'label',
+                                                      palette_type='qualitative',
+                                                      palette_name=qualitative_pal)
+        st.session_state.data.plot_histogram_with_color('pseudo_test_with_truth', 'time (months)', 'length_filtered', 'true_rul',
+                                                      palette_type='qualitative',
+                                                      palette_name=qualitative_pal)
+
+    # st.markdown('## #Remaining Useful Life (RUL)_')
+    # st.session_state.data.plot_histogram_with_color('train', 'rul (months)', 'length_filtered', 'Failure mode',
+    #                                                 palette_type='qualitative',
+    #                                                 palette_name=qualitative_pal)
 
     st.write("Statistiques Descriptives :")  # Calcul des statistiques descriptives
-    statistics = df.describe(include='all')
+    df = pd.read_csv('./data/output/training/training_data.csv')
+    statistics = df.copy().describe(include=[np.number])
     st.dataframe(statistics)
 
-    texte = """
-## TEST_
-                """
-    st.markdown(texte)
-    df = dataframes['test'].sort_values(by=['item_index', 'time (months)'])
+    grouped_stats_df = df.copy().groupby('Failure mode').describe()
+    st.dataframe(grouped_stats_df)
 
-    plot_scatter(df, 'time (months)', 'crack length (arbitary unit)', 'item_index')
+    st.markdown("## TEST_")
+    col1, col2 = st.columns([2, 2])
+    with col1:
+        st.session_state.data.plot_scatter_with_color('test', 'time (months)', 'length_measured', 'item_id',
+                                                      palette_type='qualitative',
+                                                      palette_name=qualitative_pal)
+    with col2:
+        st.session_state.data.plot_scatter_with_color('test', 'time (months)', 'length_filtered', 'item_id',
+                                                      palette_type='qualitative',
+                                                      palette_name=qualitative_pal)
+

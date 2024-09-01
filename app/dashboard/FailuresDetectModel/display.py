@@ -6,16 +6,24 @@ from sklearn.model_selection import learning_curve
 import scipy.stats as stats
 import streamlit as st
 
+
 class DisplayData:
     def __init__(self, data):
         self.data = data
+
+    def plot_discrete_scatter(self, df, x_col, y_col, color_col):
+
+        if x_col and y_col and color_col:
+            fig = px.scatter(df, x=x_col, y=y_col, color=color_col,
+                             title=f'Nuage de points pour {x_col} vs {y_col}')
+            st.plotly_chart(fig)
 
     def plot_correlation_matrix(self):
         numeric_df = self.data.select_dtypes(include=[float, int])
         corr = numeric_df.corr()
         fig = px.imshow(corr, color_continuous_scale='Viridis', text_auto=True)
         fig.update_layout(title='Correlation Matrix', title_x=0.5)
-        return fig
+        return st.plotly_chart(fig)
 
     def plot_learning_curve(self, model, X, y, cv=5):
         train_sizes, train_scores, test_scores = learning_curve(model, X, y, cv=cv)
@@ -28,7 +36,7 @@ class DisplayData:
         fig.add_trace(go.Scatter(x=train_sizes, y=test_scores_mean, mode='lines+markers', name='Cross-validation score',
                                  line=dict(color='blue')))
         fig.update_layout(title='Learning Curve', xaxis_title='Training Size', yaxis_title='Score')
-        return fig
+        return st.plotly_chart(fig)
 
     def plot_scatter_real_vs_predicted(self, y_test, predictions):
         fig = go.Figure()
@@ -39,7 +47,7 @@ class DisplayData:
                        name='Ideal Line'))
         fig.update_layout(title='Scatter Plot of Real vs Predicted', xaxis_title='Real Values',
                           yaxis_title='Predicted Values')
-        return fig
+        return st.plotly_chart(fig)
 
     def plot_residuals_vs_predicted(self, y_test, predictions):
         residuals = y_test - predictions
@@ -50,17 +58,17 @@ class DisplayData:
                                  name='Zero Line'))
         fig.update_layout(title='Residuals vs Predicted Values', xaxis_title='Predicted Values',
                           yaxis_title='Residuals')
-        return fig
+        return st.plotly_chart(fig)
 
     def plot_histogram_of_residuals(self, residuals):
         fig = px.histogram(residuals, nbins=30, color_discrete_sequence=['green'])
         fig.update_layout(title='Histogram of Residuals', xaxis_title='Residuals', yaxis_title='Frequency')
-        return fig
+        return st.plotly_chart(fig)
 
     def plot_density_curve_of_residuals(self, residuals):
         fig = px.density_contour(x=residuals, color_discrete_sequence=['green'])
         fig.update_layout(title='Density Curve of Residuals', xaxis_title='Residuals', yaxis_title='Density')
-        return fig
+        return st.plotly_chart(fig)
 
     def plot_qq_diagram(self, residuals):
         fig = go.Figure()
@@ -77,7 +85,7 @@ class DisplayData:
         fig.update_layout(title='QQ Plot des résidus', xaxis_title='Quantiles Théoriques',
                           yaxis_title='Quantiles Observés')
 
-        return fig
+        return st.plotly_chart(fig)
 
     def plot_predictions_histograms(self, true_rul, predicted_rul):
         fig = go.Figure()
@@ -90,7 +98,7 @@ class DisplayData:
             yaxis_title='Frequency',
             barmode='overlay'
         )
-        return fig
+        return st.plotly_chart(fig)
 
     def plot_distribution_histogram(self, column_name):
         df = self.data
@@ -123,6 +131,5 @@ class DisplayData:
             yaxis_title='Densité',
             template='plotly_white'
         )
-        return fig
-
+        return st.plotly_chart(fig)
 

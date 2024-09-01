@@ -1,6 +1,7 @@
+import pandas as pd
 import streamlit as st
 from ..FailuresDetectModel import clean_data
-from ..functions import DataVisualizer
+from ..functions import DataVisualizer, compare_dataframes
 from ..FailuresDetectModel import FeatureAdder, run_statistical_test
 
 def page_3():
@@ -12,39 +13,40 @@ def page_3():
 
 """
     st.markdown(texte)
-    st.markdown(f"## ---------------------------------------- Linear Regression ----------------------------------------")
-    st.write('### #FeatureAdder')
+
+    st.markdown('## #Distributions_')
+    st.session_state.data.plot_pairplot(data=pd.read_csv('./data/output/training/training_data.csv'),
+                                        hue='Failure mode',
+                                        palette='hls')
+
+    df1 = pd.read_csv('./data/output/training/training_data.csv')
+    df2 = st.session_state.data.get_the('train')
+
+    # Obtenir les colonnes des deux DataFrames
+    cols_df1 = set(df1.columns)
+    cols_df2 = set(df2.columns)
+
+    # Colonnes présentes dans df1 mais pas dans df2
+    cols_only_in_df1 = cols_df1 - cols_df2
+    st.write("Colonnes présentes uniquement dans le premier DataFrame :", cols_only_in_df1)
+
+    # Colonnes présentes dans df2 mais pas dans df1
+    cols_only_in_df2 = cols_df2 - cols_df1
+    st.write("Colonnes présentes uniquement dans le second DataFrame :", cols_only_in_df2)
+
+    st.session_state.data.plot_correlation_matrix(df_key='train')
+    st.session_state.data.plot_correlation_with_target(df_key='train',
+                                                       target_variable='label')
+    st.session_state.data.plot_correlation_with_target(df_key='train',
+                                                       target_variable='Time to failure (months)')
+    st.session_state.data.plot_correlation_with_target(df_key='train',
+                                                       target_variable='length_filtered')
+    run_statistical_test(df2, 'multicollinearity')
+
     col1, col2 = st.columns(2)
     with col1:
-        st.write('### #Train_df')
-        st.session_state.data.distribution_histogram('train', 'time (months)', 'blue')
-        #st.dataframe(train_df)
-
-        #st.write(run_statistical_test(train_df, 'normality', 'length_filtered' ))
-        #st.write(run_statistical_test(train_df, 'normality', 'length_measured'))
-
-#    with col2:
-#        fig = display_train.plot_distribution_histogram('time (months)')
-#        st.plotly_chart(fig)
-#
-#        stats_df = train_df.groupby('item_index').agg({'time (months)': ['max', 'min', 'mean', 'std']})
-#        display_stats = DisplayData(stats_df)
-#        st.dataframe(stats_df)
-#        st.plotly_chart(display_stats.plot_distribution_histogram('time (months)'))
-#
-#
-#    st.write('### #Model preprocessor_')
-#    col1, col2 = st.columns(2)
-#    with col1:
-#        st.write('### #Train_df')
-#        st.dataframe(train_df)
-#    with col2:
-#        st.write('### #Test_df')
-#        st.dataframe(test_df)
+        st.session_state.data.decompose_time_series('train', 'time (months)', 'length_measured')
+    with col2:
+        st.session_state.data.decompose_time_series('train', 'time (months)', 'length_filtered')
 
 
-
-
-    st.markdown(f"## ---------------------------------------- LSTM Model ----------------------------------------")
-
-    st.markdown(f"## --------------------------------- Random Forest Classifier -----------------------------------")

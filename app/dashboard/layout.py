@@ -18,7 +18,6 @@ def app_layout():
 
     st.set_page_config(
         page_title="SDA-MACHINE-LEARNING",
-        page_icon="",
         layout='wide',
         initial_sidebar_state="auto",
     )
@@ -27,12 +26,11 @@ def app_layout():
     st.sidebar.markdown("# --- MACHINE LEARNING ---\n\n"
                         " ## *'Predictive maintenance through failure prediction on robots'*\n")
 
-
-    page = st.sidebar.radio("", ["#0 Introduction_",
+    page = st.sidebar.radio("Project_", ["#0 Introduction_",
                                          "#1 Exploration_",
                                          "#2 Cleaning_",
                                          "#3 Feature Engineering_",
-                                         "#4 Statistics & Preprocessing_",
+                                         "#4 Statistics_",
                                          "#5 Training_",
                                          "#6 Prediction_",
                                          ])
@@ -44,30 +42,34 @@ def app_layout():
         st.markdown("#### *'Predictive Maintenance with failures detection on industrial robot'* ")
         colA, colB, colC, colD = st.columns ([1,4,4,3])
         with colA:
+            #st.text("")
             github_button('https://github.com/mriusero/projet-sda-machine-learning')
         with colB:
+            #st.text("")
             st.text("")
             st.link_button('Kaggle competition : phase I',
                            'https://www.kaggle.com/competitions/predictive-maintenance-for-industrial-robots-i')
         with colC:
+            #st.text("")
             st.text("")
             st.link_button('Kaggle competition : phase II',
                            'https://www.kaggle.com/competitions/predictive-maintenance-of-a-robot-ii')
         with colD:
+            #st.text("")
             st.text("")
             if st.button('Update data'):
                 update_message = load_data()
                 st.sidebar.success(f"{update_message}")
                 print(update_message)
 
-    st.text('')
     with col2:
-        st.write("")
-        st.write("")
-        st.write("")
+        st.text("")
+        st.text("")
+        st.text("")
 
         data = DataVisualizer()
         st.session_state.data = data
+
     line_style = """
         <style>
         .full-width-line {
@@ -95,14 +97,14 @@ def app_layout():
         page_2()
     elif page == "#3 Feature Engineering_":
         page_3()
-    elif page == "#4 Statistics & Preprocessing_":
+    elif page == "#4 Statistics_":
         page_4()
     elif page == "#5 Training_":
         page_5()
     elif page == "#6 Prediction_":
         page_6()
 
-    st.sidebar.text(f'\n')
+    st.sidebar.markdown("&nbsp;")
 
     gc.collect()
 

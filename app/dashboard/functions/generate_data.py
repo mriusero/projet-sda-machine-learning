@@ -37,7 +37,7 @@ def generate_pseudo_testing_data_with_truth(directory: str, directory_student: s
         true_rul = df.iloc[-1]['rul (months)']
 
         solution = pd.concat([solution, pd.DataFrame([{
-            'item_index': f'item_{i}',
+            'item_id': f'item_{i}',
             'label': 1 if true_rul <= 6 else 0,
             'true_rul': true_rul
         }])])

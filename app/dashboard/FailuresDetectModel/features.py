@@ -1,4 +1,7 @@
 from ..functions import ParticleFilter
+import streamlit as st
+import pandas as pd
+from statsmodels.tsa.seasonal import STL
 
 class FeatureAdder:
     def __init__(self, min_sequence_length):
@@ -54,30 +57,86 @@ class FeatureAdder:
             existing_columns = [col for col in to_recall if col in df.columns]
             df = df.drop(columns=existing_columns)
 
-        for col in ['time (months)', 'length_measured', 'length_filtered']:
+        def add_shifts_and_ratios(df, columns, max_shift=6):
+            for col in columns:
+                # Ajouter des colonnes décalées
+                for shift in range(1, max_shift + 1):
+                    df[f'{col}_shift_{shift}'] = df.groupby('item_id')[col].shift(shift)
+
+                # Ajouter des ratios entre les décalages
+                for shift in range(1, max_shift):
+                    df[f'{col}_ratio_{shift}-{shift + 1}'] = (
+                            df[f'{col}_shift_{shift}'] / (df[f'{col}_shift_{shift + 1}'] + 1e-9)
+                    # Ajout d'une petite valeur pour éviter la division par zéro
+                    )
+            df.fillna(0, inplace=True)
+            return df
+
+        def decompose_time_series(df, time_col, value_col, period=12):
+            # Vérifier la présence des colonnes
+            if time_col not in df.columns or value_col not in df.columns:
+                print(f"Les colonnes '{time_col}' ou '{value_col}' n'existent pas dans le DataFrame.")
+                return df  # Retourner le DataFrame initial en cas d'erreur
+
+            # Créer une copie du DataFrame pour les calculs
+            df_copy = df.copy()
+
+            # Définir la date de départ
+            start_date = pd.Timestamp('2024-01-01')
+            df_copy[time_col] = df_copy[time_col].apply(lambda x: start_date + pd.DateOffset(months=int(x)))
+
+            # Trier et préparer le DataFrame
+            df_copy = df_copy.sort_values(by=time_col)
+            df_copy = df_copy.dropna(subset=[time_col, value_col])
+            #df_copy.set_index(time_col, inplace=True)
+
+            # Effectuer la décomposition STL
+            try:
+                stl = STL(df_copy[value_col], period=period)
+                result = stl.fit()
+            except Exception as e:
+                print(f"Erreur lors de la décomposition STL: {e}")
+                return df  # Retourner le DataFrame initial en cas d'erreur
+
+            # Ajouter les résultats au DataFrame original
+            df['Trend'] = result.trend
+            df['Seasonal'] = result.seasonal
+            df['Residual'] = result.resid
+
+            return df
+
+        for col in ['time (months)', 'length_filtered']:
             for stat in ['mean', 'std', 'max', 'min']:
                 col_name = f'rolling_{stat}_{col}'
-                df[col_name] = df.groupby('item_index')[col].transform(
+                df[col_name] = df.groupby('item_id')[col].transform(
                     lambda x: calculate_rolling_features(x, len(x))[stat]
                 )
-                df[col_name] = df.groupby('item_index')[col_name].transform(
+                df[col_name] = df.groupby('item_id')[col_name].transform(
                     lambda x: replace_nan_by_mean(x)
                 )
-                df[col_name] = df.groupby('item_index')[col_name].transform(
+                df[col_name] = df.groupby('item_id')[col_name].transform(
                     lambda x: replace_nan_by_one(x)
                 )
                 col_name = f'static_{stat}_{col}'
-                df[col_name] = df.groupby('item_index')[col].transform(
+                df[col_name] = df.groupby('item_id')[col].transform(
                     lambda x: calculate_static_features(x)[stat]
                 )
-                df[col_name] = df.groupby('item_index')[col_name].transform(
+                df[col_name] = df.groupby('item_id')[col_name].transform(
                     lambda x: replace_nan_by_mean(x)
                 )
-                df[col_name] = df.groupby('item_index')[col_name].transform(
+                df[col_name] = df.groupby('item_id')[col_name].transform(
                     lambda x: replace_nan_by_one(x)
                 )
 
         to_fill_0 = ['time (months)', 'length_measured', 'length_filtered']
         df[to_fill_0] = df[to_fill_0].fillna(0)
+
+        # Liste des colonnes pour lesquelles on souhaite créer des caractéristiques décalées et des ratios
+        shift_columns = ['length_filtered']
+        df = add_shifts_and_ratios(df, shift_columns)
+
+        df = decompose_time_series(df, 'time (months)', 'length_filtered')
+
+        df = df.sort_values(by=["item_id", "time (months)"], ascending=[True, True])
 
         return df
