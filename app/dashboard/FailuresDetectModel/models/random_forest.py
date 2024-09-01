@@ -31,7 +31,6 @@ class RandomForestClassifierModel:
             'length_filtered': ['mean', 'std', 'max', 'min'],
             'length_measured': ['mean', 'std', 'max', 'min'],
             'source': 'mean',  # Mode for categorical data
-            'crack_failure': 'mean'
         }).reset_index()
 
         # Flatten the column MultiIndex

@@ -76,17 +76,15 @@ def ml_pipeline(train_df, pseudo_test_with_truth_df, test_df, optimize):
                                     'predicted_failure_now', 'predicted_failure_now_binary',
                                     'predicted_failure_6_months', 'predicted_failure_6_months_binary',
                                     'deducted_rul']])
-    # --------- LSTM Model ------------
-    #lstm_model = instance_model('LSTMModel')
-    #lstm_predictions_cross_val, lstm_predictions_final_test = lstm_model.run_full_pipeline(train_df, pseudo_test_with_truth_df, test_df)
-#
-    #pseudo_test_with_truth_df = lstm_predictions_cross_val
-    #test_df = lstm_predictions_final_test
 
-    # if 'RandomForestClassifierModel' in selected_models:
-    # --------- Random Forest Classifier Model ------------
-    #rf_model = instance_model('RandomForestClassifierModel')
-    #rf_model.run_full_pipeline(train_df, pseudo_test_with_truth_df, test_df)
+    st.markdown("# Below are previous test for phase I:\n______________________________________")
+    # --------- LSTM Model ------------
+    lstm_model = instance_model('LSTMModel')
+    lstm_predictions_cross_val, lstm_predictions_final_test = lstm_model.run_full_pipeline(train_df, pseudo_test_with_truth_df, test_df)
+#
+    st.dataframe(lstm_predictions_cross_val)
+    st.dataframe(lstm_predictions_final_test)
+
 
 def handle_models():
     """

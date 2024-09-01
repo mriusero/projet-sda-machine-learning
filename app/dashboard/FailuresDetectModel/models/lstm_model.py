@@ -123,10 +123,10 @@ class LSTMModel(ModelBase):
             rolling_stds_filtered = item_data['rolling_std_length_filtered'].values
             rolling_maxs_filtered = item_data['rolling_max_length_filtered'].values
             rolling_mins_filtered = item_data['rolling_min_length_filtered'].values
-            rolling_means_measured = item_data['rolling_mean_length_measured'].values
-            rolling_stds_measured = item_data['rolling_std_length_measured'].values
-            rolling_maxs_measured = item_data['rolling_max_length_measured'].values
-            rolling_mins_measured = item_data['rolling_min_length_measured'].values
+            #rolling_means_measured = item_data['rolling_mean_length_measured'].values
+            #rolling_stds_measured = item_data['rolling_std_length_measured'].values
+            #rolling_maxs_measured = item_data['rolling_max_length_measured'].values
+            #rolling_mins_measured = item_data['rolling_min_length_measured'].values
 
             print(f"item_id: {item_index}, Length of data: {len(times)}")
 
@@ -141,10 +141,10 @@ class LSTMModel(ModelBase):
                     rolling_stds_filtered[i:i + sequence_length],
                     rolling_maxs_filtered[i:i + sequence_length],
                     rolling_mins_filtered[i:i + sequence_length],
-                    rolling_means_measured[i:i + sequence_length],
-                    rolling_stds_measured[i:i + sequence_length],
-                    rolling_maxs_measured[i:i + sequence_length],
-                    rolling_mins_measured[i:i + sequence_length]
+             #      rolling_means_measured[i:i + sequence_length],
+             #      rolling_stds_measured[i:i + sequence_length],
+             #      rolling_maxs_measured[i:i + sequence_length],
+             #      rolling_mins_measured[i:i + sequence_length]
                 ))
                 sequences.append(seq)
 
@@ -183,10 +183,10 @@ class LSTMModel(ModelBase):
                 'rolling_stds_filtered': item_data['rolling_std_length_filtered'].values,
                 'rolling_maxs_filtered': item_data['rolling_max_length_filtered'].values,
                 'rolling_mins_filtered': item_data['rolling_min_length_filtered'].values,
-                'rolling_means_measured': item_data['rolling_mean_length_measured'].values,
-                'rolling_stds_measured': item_data['rolling_std_length_measured'].values,
-                'rolling_maxs_measured': item_data['rolling_max_length_measured'].values,
-                'rolling_mins_measured': item_data['rolling_min_length_measured'].values
+            #    'rolling_means_measured': item_data['rolling_mean_length_measured'].values,
+            #    'rolling_stds_measured': item_data['rolling_std_length_measured'].values,
+            #    'rolling_maxs_measured': item_data['rolling_max_length_measured'].values,
+            #    'rolling_mins_measured': item_data['rolling_min_length_measured'].values
             }
             return features
 
@@ -199,10 +199,10 @@ class LSTMModel(ModelBase):
                 features['rolling_stds_filtered'][-self.min_sequence_length:],
                 features['rolling_maxs_filtered'][-self.min_sequence_length:],
                 features['rolling_mins_filtered'][-self.min_sequence_length:],
-                features['rolling_means_measured'][-self.min_sequence_length:],
-                features['rolling_stds_measured'][-self.min_sequence_length:],
-                features['rolling_maxs_measured'][-self.min_sequence_length:],
-                features['rolling_mins_measured'][-self.min_sequence_length:]
+             #   features['rolling_means_measured'][-self.min_sequence_length:],
+             #   features['rolling_stds_measured'][-self.min_sequence_length:],
+             #   features['rolling_maxs_measured'][-self.min_sequence_length:],
+             #   features['rolling_mins_measured'][-self.min_sequence_length:]
             ))
             return pad_sequences([last_sequence], maxlen=self.min_sequence_length, padding='post', dtype='float32')
 
@@ -251,10 +251,10 @@ class LSTMModel(ModelBase):
                 'rolling_stds_filtered': item_data['rolling_std_length_filtered'].values,
                 'rolling_maxs_filtered': item_data['rolling_max_length_filtered'].values,
                 'rolling_mins_filtered': item_data['rolling_min_length_filtered'].values,
-                'rolling_means_measured': item_data['rolling_mean_length_measured'].values,
-                'rolling_stds_measured': item_data['rolling_std_length_measured'].values,
-                'rolling_maxs_measured': item_data['rolling_max_length_measured'].values,
-                'rolling_mins_measured': item_data['rolling_min_length_measured'].values
+              #  'rolling_means_measured': item_data['rolling_mean_length_measured'].values,
+              #  'rolling_stds_measured': item_data['rolling_std_length_measured'].values,
+              #  'rolling_maxs_measured': item_data['rolling_max_length_measured'].values,
+              #  'rolling_mins_measured': item_data['rolling_min_length_measured'].values
             }
 
             data_dict = {
@@ -359,9 +359,9 @@ class LSTMModel(ModelBase):
         self.save_predictions(output_path, lstm_predictions_cross_val, step='cross-val')
 
         # Génération du fichier de soumission et calcul du score pour la validation croisée
-        generate_submission_file(model_name, output_path, step='cross-val')
-        score = calculate_score(output_path, step='cross-val')
-        st.write(f"Score de cross validation pour {model_name}: {score}")
+        #generate_submission_file(model_name, output_path, step='cross-val')
+        #score = calculate_score(output_path, step='cross-val')
+        #st.write(f"Score de cross validation pour {model_name}: {score}")
 
         # Prédictions finales sur test_df
         all_predictions = self.predict_futures_values(test_df)
@@ -369,9 +369,9 @@ class LSTMModel(ModelBase):
         self.save_predictions(output_path, lstm_predictions_final_test, step='final-test')
 
         # Génération du fichier de soumission et calcul du score final
-        generate_submission_file(model_name, output_path, step='final-test')
-        final_score = calculate_score(output_path, step='final-test')
-        st.write(f"Le score final pour {model_name} est de {final_score}")
+        #generate_submission_file(model_name, output_path, step='final-test')
+        #final_score = calculate_score(output_path, step='final-test')
+        #st.write(f"Le score final pour {model_name} est de {final_score}")
 
         # Affichage des résultats
         self.display_results(lstm_predictions_final_test)
