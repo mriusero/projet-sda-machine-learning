@@ -45,12 +45,6 @@ def page_1():
                                                       palette_type='qualitative',
                                                       palette_name=qualitative_pal)
 
-
-
-
-
-
-
     st.markdown("## #PSEUDO_TEST_WITH_TRUTH_")
     st.markdown('## #End of life_')
     col1, col2 = st.columns([2, 2])
@@ -82,11 +76,6 @@ def page_1():
                                                       palette_type='qualitative',
                                                       palette_name=qualitative_pal)
 
-    # st.markdown('## #Remaining Useful Life (RUL)_')
-    # st.session_state.data.plot_histogram_with_color('train', 'rul (months)', 'length_filtered', 'Failure mode',
-    #                                                 palette_type='qualitative',
-    #                                                 palette_name=qualitative_pal)
-
     st.write("Statistiques Descriptives :")  # Calcul des statistiques descriptives
     df = pd.read_csv('./data/output/training/training_data.csv')
     statistics = df.copy().describe(include=[np.number])
@@ -95,14 +84,5 @@ def page_1():
     grouped_stats_df = df.copy().groupby('Failure mode').describe()
     st.dataframe(grouped_stats_df)
 
-    st.markdown("## TEST_")
-    col1, col2 = st.columns([2, 2])
-    with col1:
-        st.session_state.data.plot_scatter_with_color('test', 'time (months)', 'length_measured', 'item_id',
-                                                      palette_type='qualitative',
-                                                      palette_name=qualitative_pal)
-    with col2:
-        st.session_state.data.plot_scatter_with_color('test', 'time (months)', 'length_filtered', 'item_id',
-                                                      palette_type='qualitative',
-                                                      palette_name=qualitative_pal)
+
 

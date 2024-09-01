@@ -314,7 +314,7 @@ $y_{th} = 0.85$.
           - **__init__.py** : Initialise le module `FailuresDetectModel`.
           - **display.py** : Contient les fonctions d'affichage des données.
           - **features.py** : Gestion des fonctionnalités spécifiques au modèle.
-          - **main.py** : Point d'entrée pour le modèle de détection de pannes.
+          - **main_phase_I.py** : Point d'entrée pour le modèle de détection de pannes.
           - **models/** : Dossier contenant divers modèles de machine learning.
             - **linear_regression.py** : Implémentation de la régression linéaire.
             - **lstm_model.py** à **lstm_modelV6.py** : Différentes versions d’un modèle LSTM.
