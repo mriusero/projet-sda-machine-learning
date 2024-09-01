@@ -1,4 +1,4 @@
-# main.py
+# main_phase_II.py
 import os
 import streamlit as st
 from ..FailuresDetectModel import (RandomForestClassifierModel, LSTMModel, GradientBoostingSurvivalModel)
@@ -88,7 +88,7 @@ def ml_pipeline(train_df, pseudo_test_with_truth_df, test_df, optimize):
     #rf_model = instance_model('RandomForestClassifierModel')
     #rf_model.run_full_pipeline(train_df, pseudo_test_with_truth_df, test_df)
 
-def handle_models():
+def handle_models_phase_II():
     """
     Model management function that runs the pipeline for each selected model.
     """
@@ -98,7 +98,7 @@ def handle_models():
 
     optimize = st.checkbox('Optimize Hyperparameters', value=False)
 
-    if st.button('Run predictions phase I'):
+    if st.button('Run predictions phase II'):
         os.system('clear')
         ml_pipeline(train_df, pseudo_test_with_truth_df, test_df, optimize=optimize)
 

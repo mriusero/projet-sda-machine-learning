@@ -84,10 +84,6 @@ def page_4():
         variable_types_df = display_variable_types(pseudo_test_df)
         st.dataframe(variable_types_df)
 
-
-        st.session_state.data.plot_pairplot(data=pd.read_csv('./data/output/training/training_data.csv'),
-                                            hue='Failure mode',
-                                            palette='hls')
         df = pd.read_csv('./data/output/training/training_data.csv')
         run_statistical_test(df, 'normality', 'time (months)')
         run_statistical_test(df, 'normality', 'crack length (arbitary unit)')
@@ -96,12 +92,5 @@ def page_4():
 
         st.session_state.data.boxplot('train', 'Failure mode', 'Time to failure (months)')
 
-    col1, col2 = st.columns(2)
-    with col1 :
-        st.markdown("### #Length Measured")
-        st.session_state.data.decompose_time_series('train', 'time (months)', 'length_measured')
-    with col2 :
-        st.markdown("### #Length Filtered")
-        st.session_state.data.decompose_time_series('train', 'time (months)', 'length_filtered')
 
-    st.session_state.data.plot_correlation_matrix(df_key='train')
+

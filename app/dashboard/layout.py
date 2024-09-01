@@ -31,8 +31,8 @@ def app_layout():
                                          "#2 Cleaning_",
                                          "#3 Feature Engineering_",
                                          "#4 Statistics_",
-                                         "#5 Training_",
-                                         "#6 Prediction_",
+                                         "#5 Prediction phase I",
+                                         "#6 Prediction phase II",
                                          ])
     # -- LAYOUT --
     col1, col2 = st.columns([6,4])
@@ -99,9 +99,9 @@ def app_layout():
         page_3()
     elif page == "#4 Statistics_":
         page_4()
-    elif page == "#5 Training_":
+    elif page == "#5 Prediction phase I":
         page_5()
-    elif page == "#6 Prediction_":
+    elif page == "#6 Prediction phase II":
         page_6()
 
     st.sidebar.markdown("&nbsp;")

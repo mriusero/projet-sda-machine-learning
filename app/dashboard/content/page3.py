@@ -45,8 +45,10 @@ def page_3():
 
     col1, col2 = st.columns(2)
     with col1:
+        st.markdown("### #Length Measured")
         st.session_state.data.decompose_time_series('train', 'time (months)', 'length_measured')
     with col2:
+        st.markdown("### #Length Filtered")
         st.session_state.data.decompose_time_series('train', 'time (months)', 'length_filtered')
 
 
