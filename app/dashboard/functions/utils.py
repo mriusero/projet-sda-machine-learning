@@ -19,7 +19,7 @@ def load_data():
             df = pd.read_csv(file_path)
             df['item_id'] = item_id
             degradation_dfs.append(df)
-    degradation_data = pd.concat(degradation_dfs, ignore_index=True)
+    degradation_data = pd.concat(degradation_dfs, ignore_index=False)
 
     pseudo_testing_data_path = './data/input/training_data/pseudo_testing_data'     #Pseudo testing
     pseudo_testing_dfs = []
@@ -30,7 +30,7 @@ def load_data():
             df = pd.read_csv(file_path)
             df['item_id'] = item_id
             pseudo_testing_dfs.append(df)
-    pseudo_testing_data = pd.concat(pseudo_testing_dfs, ignore_index=True)
+    pseudo_testing_data = pd.concat(pseudo_testing_dfs, ignore_index=False)
 
     pseudo_testing_data_with_truth_path = './data/input/training_data/pseudo_testing_data_with_truth'  # Pseudo testing with truth
     pseudo_testing_data_with_truth_dfs = []
@@ -43,7 +43,7 @@ def load_data():
                 df = pd.read_csv(file_path)
                 df['item_id'] = item_id
                 pseudo_testing_data_with_truth_dfs.append(df)
-    pseudo_testing_data_with_truth = pd.concat(pseudo_testing_dfs, ignore_index=True)
+    pseudo_testing_data_with_truth = pd.concat(pseudo_testing_dfs, ignore_index=False)
 
     solution_data_path = './data/input/training_data/pseudo_testing_data_with_truth/Solution.csv'   # Solution
     solution_data = pd.read_csv(solution_data_path)
@@ -57,7 +57,7 @@ def load_data():
             df = pd.read_csv(file_path)
             df['item_id'] = item_id
             testing_dfs.append(df)
-    testing_data = pd.concat(testing_dfs, ignore_index=True)
+    testing_data = pd.concat(testing_dfs, ignore_index=False)
 
     data = {
         'failure_data': failure_data,
@@ -75,23 +75,20 @@ def merge_data(training_data):
     df1 = pd.merge(training_data['degradation_data'], training_data['failure_data'], on='item_id', how='left')
     df1['label'] = (df1['rul (months)'] <= 6).astype(int)
     df1 = df1.sort_values(by=["item_id", "time (months)"], ascending=[True, True])
-    #df1.rename(columns={'item_id': 'item_index'}, inplace=True)
-    #df1['item_index'] = df1['item_index'].apply(lambda x: f'item_{x}')
+
 
     df2 = training_data['pseudo_testing_data'].copy()
-    #df2.rename(columns={'item_id': 'item_index'}, inplace=True)
-    #df2['item_index'] = df2['item_index'].apply(lambda x: f'item_{x}')
+    df2['item_id'] = df2['item_id'].astype(int)
 
     df3 = training_data['pseudo_testing_data_with_truth'].copy()
-    #df3.rename(columns={'item_id': 'item_index'}, inplace=True)
-    #df3['item_index'] = df3['item_index'].apply(lambda x: f'item_{x}')
+
     training_data['solution_data']['item_id'] = training_data['solution_data']['item_id'].str.extract(r'(\d+)').astype(int)
-    #training_data['solution_data']['item_id'] = training_data['solution_data']['item_id'].astype(str)
     df3 = pd.merge(df3, training_data['solution_data'], on='item_id', how='left')
+    df3['item_id'] = df3['item_id'].astype(int)
 
     df4 = training_data['testing_data'].copy()
-    #df4.rename(columns={'item_id': 'item_index'}, inplace=True)
-    #df4['item_index'] = df2['item_index'].apply(lambda x: f'{x}')
+    df4['item_id'] = df4['item_id'].astype(int)
+
 
     df1.to_csv('./data/output/training/training_data.csv', index=False)
     df2.to_csv('./data/output/pseudo_testing/pseudo_testing_data.csv', index=False)

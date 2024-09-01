@@ -22,6 +22,9 @@ class DataVisualizer:
 
     @st.cache_data
     def preprocessing(_self, df):
+        df = df.rename(columns={'crack length (arbitary unit)': 'length_measured'})
+        df = df.sort_values(by=['item_id', 'time (months)'])
+        df['item_id'] = df['item_id'].astype(int)
         return _self.feature_adder.add_features(clean_data(df), particles_filtery=True)
 
     def get_dataframes(self):

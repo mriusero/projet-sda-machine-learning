@@ -105,8 +105,7 @@ class FeatureAdder:
 
             return df
 
-
-        for col in ['time (months)', 'length_measured', 'length_filtered']:
+        for col in ['time (months)', 'length_filtered']:
             for stat in ['mean', 'std', 'max', 'min']:
                 col_name = f'rolling_{stat}_{col}'
                 df[col_name] = df.groupby('item_id')[col].transform(
@@ -133,13 +132,11 @@ class FeatureAdder:
         df[to_fill_0] = df[to_fill_0].fillna(0)
 
         # Liste des colonnes pour lesquelles on souhaite créer des caractéristiques décalées et des ratios
-        shift_columns = ['length_measured', 'length_filtered']
+        shift_columns = ['length_filtered']
         df = add_shifts_and_ratios(df, shift_columns)
 
         df = decompose_time_series(df, 'time (months)', 'length_filtered')
 
-        if 'rul (months)' in df.columns:
-            df['label'] = (df['rul (months)'] <= 6).astype(int)
-            df = df.sort_values(by=["item_id", "time (months)"], ascending=[True, True])
+        df = df.sort_values(by=["item_id", "time (months)"], ascending=[True, True])
 
         return df
