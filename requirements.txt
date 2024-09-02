@@ -3,11 +3,11 @@ streamlit==1.37.1
 watchdog==4.0.1
 
 # Data transformation
-numpy==2.0.1
+numpy==1.26.4  # Version correcte installée
 pandas==2.2.2
 pyarrow==17.0.0
 
-# Data vizualisation
+# Data visualization
 matplotlib==3.9.0
 plotly==5.23.0
 seaborn==0.13.2
@@ -20,10 +20,11 @@ scikit-learn==1.5.1
 scikit-survival==0.23.0
 optuna==3.6.1
 scipy==1.14.0
-filterpy
+filterpy==1.4.5  # Ajoutez la version installée
 
+# Deep Learning
+tensorflow==2.16.2  # Ajoutez la version installée
 
-tensorflow
 
 
 
