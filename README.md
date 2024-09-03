@@ -1,12 +1,38 @@
 # projet-sda-machine-learning
+## Installation 
+### Prerequisites
+- Python 3.8 or higher 
+- pip (Python package installer)
 
-## Phase I
-### **1. Description du Dataset**
+### Clone the Repository
+    git clone https://github.com/mriusero/projet-sda-machine-learning
+    cd projet-sda-machine-learning
 
-**Cette page fournit :**
-- Les données d'entraînement
-- Les données de test
-- Un fichier CSV servant de modèle pour soumettre vos résultats
+## Create and Activate Virtual Environment (Optional but Recommended)
+
+### On macOS/Linux
+    python3 -m venv venv
+    source venv/bin/activate
+
+### On Windows
+    python -m venv venv
+    venv\Scripts\activate
+
+## Install Dependencies
+    pip install -r requirements.txt
+
+## Running the Application
+To start the Streamlit application, run the following command from the root directory of the project:
+ 
+    cd app 
+    streamlit run app/app.py
+
+## Project Details
+
+- **app.py:** The main entry point of the Streamlit application.
+- **dashboard/:** Contains the components, layout, and content for the dashboard.
+- **data/:** Contains the input data files, exploratory notebooks, and preprocessed data outputs. 
+
 
 #### Tree
     .
@@ -87,9 +113,4 @@
 2. **Notebook :** Outil pour générer des données pseudo-test pour aider à la préparation de votre modèle.
 
 3. **Données de Test :** Disponibles pour évaluation et un modèle de soumission est fourni pour structurer les résultats.
-
-
-
-
-
 
